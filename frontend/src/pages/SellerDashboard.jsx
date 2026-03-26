@@ -1,210 +1,419 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Trash2 } from 'lucide-react';
+import { Reveal } from '../components/UIElements';
+import { Trash2, Edit2, Plus, Archive, UploadCloud, X, Layout, Package } from 'lucide-react';
 
 const SellerDashboard = () => {
   const { user } = useContext(AuthContext);
 
-  // State for the Upload Form
-  const [productData, setProductData] = useState({
-    name: '', price: '', category: '', image: '', description: ''
-  });
+  const [activeTab, setActiveTab] = useState('garments');
+  const [myOrders, setMyOrders] = useState([]);
+
+  // --- GARMENT STATES ---
+  const [productData, setProductData] = useState({ name: '', price: '', category: '', image: '', description: '', belongsToCollection: '' });
+  const [myProducts, setMyProducts] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
+  
+  // --- COLLECTION STATES ---
+  const [collectionData, setCollectionData] = useState({ title: '', subtitle: '', image: '' });
+  const [myCollections, setMyCollections] = useState([]);
+
+  // --- SHARED STATES ---
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [fetchingData, setFetchingData] = useState(true);
+  const fileInputRef = useRef(null);
 
-  // State for the Seller's existing garments
-  const [myProducts, setMyProducts] = useState([]);
-  const [fetchingProducts, setFetchingProducts] = useState(true);
-
-  // Fetch the seller's specific products when the dashboard loads
   useEffect(() => {
     fetchMyProducts();
+    fetchCollections();
+    fetchOrders();
   }, []);
+  
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch('/api/orders/seller', { headers: { Authorization: `Bearer ${user?.token}` } });
+      if (res.ok) setMyOrders(await res.json());
+    } catch (error) { console.error(error); }
+  };
 
   const fetchMyProducts = async () => {
     try {
-      const response = await fetch('/api/products/seller', {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMyProducts(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch products", error);
-    } finally {
-      setFetchingProducts(false);
+      const response = await fetch('/api/products/seller', { headers: { Authorization: `Bearer ${user?.token}` } });
+      if (response.ok) setMyProducts(await response.json());
+    } catch (error) { console.error(error); } 
+    finally { setFetchingData(false); }
+  };
+
+  const fetchCollections = async () => {
+    try {
+      const response = await fetch('/api/collections');
+      if (response.ok) setMyCollections(await response.json());
+    } catch (error) { console.error(error); }
+  };
+
+  const handleImageUpload = (e, isCollection = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) return alert("Please upload an image smaller than 5MB.");
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (isCollection) {
+            setCollectionData({ ...collectionData, image: reader.result });
+        } else {
+            setProductData({ ...productData, image: reader.result });
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleChange = (e) => {
-    setProductData({ ...productData, [e.target.name]: e.target.value });
-  };
-
-  // Handle uploading a new garment
-  const handleSubmit = async (e) => {
+  // --- GARMENT HANDLERS ---
+  const handleProductSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage(null);
+    if (!productData.image) return alert("Please upload an image.");
+    setLoading(true); setMessage(null);
+
+    const url = isEditing ? `/api/products/${editId}` : '/api/products';
+    const method = isEditing ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}` 
-        },
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` },
         body: JSON.stringify(productData)
       });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Failed to curate item');
-
-      setMessage({ type: 'success', text: 'Item successfully curated into the Atelier.' });
-      setProductData({ name: '', price: '', category: '', image: '', description: '' }); 
+      if (!response.ok) throw new Error('Failed to process request');
+      setMessage({ type: 'success', text: isEditing ? 'Garment updated.' : 'Garment curated.' });
       
-      // Refresh the list below immediately after uploading
+      resetForm(); 
       fetchMyProducts();
-    } catch (err) {
-      setMessage({ type: 'error', text: err.message });
-    } finally {
-      setLoading(false);
-    }
+      setTimeout(() => setMessage(null), 4000);
+    } catch (err) { setMessage({ type: 'error', text: err.message }); } 
+    finally { setLoading(false); }
   };
 
-  // Handle deleting a garment
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you wish to remove this garment from the Atelier?")) return;
-
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm("Permanently remove this garment?")) return;
     try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-
+      const response = await fetch(`/api/products/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${user?.token}` } });
       if (response.ok) {
-        // Remove the item from the React state so it disappears instantly from the screen
-        setMyProducts(myProducts.filter(product => product._id !== id));
-      } else {
-        alert("Failed to delete garment.");
+        setMyProducts(myProducts.filter(p => p._id !== id));
+        if (isEditing && editId === id) resetForm();
       }
-    } catch (error) {
-      console.error(error);
-    }
+    } catch (error) { console.error(error); }
+  };
+
+  const handleEditClick = (product) => {
+    setIsEditing(true); setEditId(product._id);
+    setProductData({ 
+        name: product.name, 
+        price: product.price, 
+        category: product.category, 
+        image: product.image, 
+        description: product.description,
+        belongsToCollection: product.belongsToCollection || '' 
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const resetForm = () => {
+    setIsEditing(false); setEditId(null);
+    setProductData({ name: '', price: '', category: '', image: '', description: '', belongsToCollection: '' });
+  };
+
+  // --- COLLECTION HANDLERS ---
+  const handleCollectionSubmit = async (e) => {
+    e.preventDefault();
+    if (!collectionData.image) return alert("Please upload a cover image.");
+    setLoading(true); setMessage(null);
+    try {
+      const response = await fetch('/api/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` },
+        body: JSON.stringify(collectionData)
+      });
+      if (!response.ok) throw new Error('Failed to curate collection');
+      setMessage({ type: 'success', text: 'Collection published to Home page.' });
+      setCollectionData({ title: '', subtitle: '', image: '' });
+      fetchCollections();
+      setTimeout(() => setMessage(null), 4000);
+    } catch (err) { setMessage({ type: 'error', text: err.message }); } 
+    finally { setLoading(false); }
+  };
+
+  const handleDeleteCollection = async (id) => {
+    if (!window.confirm("Remove this collection from the Home page?")) return;
+    try {
+      const response = await fetch(`/api/collections/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${user?.token}` } });
+      if (response.ok) setMyCollections(myCollections.filter(c => c._id !== id));
+    } catch (error) { console.error(error); }
+  };
+
+  // 🌟 DYNAMIC STATUS UPDATER 🌟
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        // Instantly update the UI without a page refresh
+        setMyOrders(myOrders.map(order => 
+            order._id === orderId ? { ...order, status: newStatus } : order
+        ));
+      }
+    } catch (error) { console.error(error); }
   };
 
   return (
-    <div className="min-h-screen bg-heritage-bg py-20 px-6 relative">
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-heritage-primary opacity-5 blur-[150px] pointer-events-none"></div>
-
-      <div className="max-w-5xl mx-auto z-10 relative">
+    <div className="min-h-screen bg-[#faf8f5] pt-32 pb-20 px-6 md:px-12">
+      <div className="max-w-[1200px] mx-auto">
         
-        {/* Header Section */}
-        <div className="mb-12 border-b border-heritage-border pb-6">
-          <h2 className="text-xs font-sans text-heritage-gold tracking-[0.3em] uppercase mb-2">
-            The Artisan's Ledger
-          </h2>
-          <h1 className="text-4xl font-serif text-heritage-textLight tracking-wider">
-            Manage Your Boutique
-          </h1>
-        </div>
+        <Reveal>
+          <div className="text-center mb-12">
+            <h1 className="font-serif text-4xl md:text-5xl font-light tracking-[3px] text-[#1a1a1a] mb-8">Artisan Workspace</h1>
+            
+            <div className="flex justify-center flex-wrap gap-6 md:gap-10 border-b border-[#e8e6e2] pb-4">
+              <button onClick={() => setActiveTab('garments')} className={`font-serif text-xl tracking-[2px] transition-colors ${activeTab === 'garments' ? 'text-[#b4a078]' : 'text-[#999] hover:text-[#1a1a1a]'}`}>Manage Garments</button>
+              <button onClick={() => setActiveTab('collections')} className={`font-serif text-xl tracking-[2px] transition-colors ${activeTab === 'collections' ? 'text-[#b4a078]' : 'text-[#999] hover:text-[#1a1a1a]'}`}>Curate Collections</button>
+              <button onClick={() => setActiveTab('orders')} className={`font-serif text-xl tracking-[2px] transition-colors ${activeTab === 'orders' ? 'text-[#b4a078]' : 'text-[#999] hover:text-[#1a1a1a]'}`}>Client Orders</button>
+            </div>
+          </div>
+        </Reveal>
 
-        {/* ========================================= */}
-        {/* TOP HALF: THE UPLOAD FORM                 */}
-        {/* ========================================= */}
-        <div className="mb-20">
-          <h2 className="text-2xl font-serif text-heritage-gold mb-8">Curate New Garment</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
           
-          {message && (
-            <div className={`mb-8 p-4 border text-xs tracking-widest uppercase font-sans text-center ${message.type === 'success' ? 'border-heritage-gold/50 bg-heritage-gold/10 text-heritage-gold' : 'border-red-500/50 bg-red-500/10 text-red-400'}`}>
-              {message.text}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="bg-heritage-surface p-10 shadow-2xl border border-heritage-border relative">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-8">
-                <div>
-                  <label className="block text-xs font-sans text-heritage-textLight uppercase tracking-widest mb-3 opacity-80">Garment Title</label>
-                  <input type="text" name="name" value={productData.name} onChange={handleChange} className="w-full bg-transparent border-b border-heritage-border py-2 text-heritage-textLight focus:outline-none focus:border-heritage-gold transition-colors font-serif text-lg" required />
-                </div>
-                <div>
-                  <label className="block text-xs font-sans text-heritage-textLight uppercase tracking-widest mb-3 opacity-80">Price (INR)</label>
-                  <input type="number" name="price" value={productData.price} onChange={handleChange} className="w-full bg-transparent border-b border-heritage-border py-2 text-heritage-textLight focus:outline-none focus:border-heritage-gold transition-colors font-serif text-lg" required min="0" />
-                </div>
-                <div>
-                  <label className="block text-xs font-sans text-heritage-textLight uppercase tracking-widest mb-3 opacity-80">Category</label>
-                  <select name="category" value={productData.category} onChange={handleChange} className="w-full bg-transparent border-b border-heritage-border py-3 text-heritage-textLight focus:outline-none focus:border-heritage-gold transition-colors font-serif text-lg appearance-none cursor-pointer" required>
-                    <option value="" className="bg-heritage-surface text-heritage-textLight">Select Category</option>
-                    <option value="Bridal Lehenga" className="bg-heritage-surface">Bridal Lehenga</option>
-                    <option value="Sarees" className="bg-heritage-surface">Sarees</option>
-                    <option value="Menswear" className="bg-heritage-surface">Menswear</option>
-                    <option value="Jewelry" className="bg-heritage-surface">Jewelry</option>
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-8">
-                <div>
-                  <label className="block text-xs font-sans text-heritage-textLight uppercase tracking-widest mb-3 opacity-80">Image URL</label>
-                  <input type="url" name="image" value={productData.image} onChange={handleChange} className="w-full bg-transparent border-b border-heritage-border py-2 text-heritage-textLight focus:outline-none focus:border-heritage-gold transition-colors font-serif text-lg" required />
-                </div>
-                <div className="h-full">
-                  <label className="block text-xs font-sans text-heritage-textLight uppercase tracking-widest mb-3 opacity-80">Heritage Description</label>
-                  <textarea name="description" value={productData.description} onChange={handleChange} className="w-full bg-transparent border-b border-heritage-border py-2 text-heritage-textLight focus:outline-none focus:border-heritage-gold transition-colors font-serif text-lg resize-none h-32" required></textarea>
-                </div>
-              </div>
-            </div>
-            <div className="pt-6 border-t border-heritage-border mt-8">
-              <button type="submit" disabled={loading} className="w-full md:w-auto px-12 bg-heritage-primary hover:bg-heritage-primaryHover text-heritage-textLight font-sans text-sm uppercase tracking-widest py-4 transition-all duration-300 border border-transparent hover:border-heritage-gold shadow-[0_0_15px_rgba(123,24,24,0.3)] disabled:opacity-50">
-                {loading ? 'Curating...' : 'Curate Collection'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* ========================================= */}
-        {/* BOTTOM HALF: THE SELLER'S ARCHIVE LIST    */}
-        {/* ========================================= */}
-        <div>
-          <h2 className="text-2xl font-serif text-heritage-gold mb-8">Your Curated Archives</h2>
-          
-          {fetchingProducts ? (
-            <div className="flex justify-center py-10">
-              <div className="w-8 h-8 border-2 border-heritage-gold border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : myProducts.length === 0 ? (
-            <p className="text-sm font-sans text-heritage-textLight opacity-50 tracking-widest uppercase py-8 border border-heritage-border border-dashed text-center">
-              You have not curated any garments yet.
-            </p>
-          ) : (
-            <div className="space-y-6">
-              {myProducts.map((product) => (
-                <div key={product._id} className="flex items-center justify-between bg-heritage-surface/30 border border-heritage-border p-4 hover:border-heritage-gold/50 transition-colors">
-                  
-                  <div className="flex items-center gap-6">
-                    <img src={product.image} alt={product.name} className="w-16 h-20 object-cover" />
-                    <div>
-                      <p className="text-[10px] font-sans text-heritage-gold tracking-widest uppercase mb-1">{product.category}</p>
-                      <h3 className="text-lg font-serif text-heritage-textLight tracking-wide">{product.name}</h3>
-                      <p className="text-xs font-sans text-heritage-textLight opacity-70 tracking-wider mt-1">INR {product.price.toLocaleString('en-IN')}</p>
-                    </div>
+          <div className="lg:col-span-7">
+            <Reveal delay={0.2}>
+              <div className={`bg-[#f5f3f0] p-10 md:p-14 border transition-colors duration-500 ${isEditing ? 'border-[#b4a078] shadow-lg shadow-[#b4a078]/10' : 'border-[#e8e6e2]'}`}>
+                
+                <div className="flex items-center justify-between mb-10">
+                  <div className="flex items-center gap-3">
+                    {activeTab === 'garments' && (isEditing ? <Edit2 size={20} className="text-[#b4a078]" /> : <Plus size={20} className="text-[#b4a078]" />)}
+                    {activeTab === 'collections' && <Layout size={20} className="text-[#b4a078]" />}
+                    {activeTab === 'orders' && <Package size={20} className="text-[#b4a078]" />}
+                    
+                    <h2 className="font-serif text-2xl tracking-[2px] text-[#1a1a1a]">
+                      {activeTab === 'garments' && (isEditing ? 'Modify Garment' : 'Curate New Garment')}
+                      {activeTab === 'collections' && 'Curate Home Collection'}
+                      {activeTab === 'orders' && 'Order Management'}
+                    </h2>
                   </div>
-
-                  <button 
-                    onClick={() => handleDelete(product._id)}
-                    className="p-3 text-heritage-textLight opacity-50 hover:opacity-100 hover:text-red-400 transition-colors border border-transparent hover:border-red-400/30"
-                    title="Remove Garment"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-
+                  {isEditing && activeTab === 'garments' && (
+                    <button onClick={resetForm} className="text-[10px] font-sans tracking-widest uppercase text-[#999] hover:text-red-500 flex items-center gap-1"><X size={12}/> Cancel Edit</button>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
+                {message && (
+                  <div className={`mb-8 p-4 border text-[10px] tracking-[2px] uppercase font-sans text-center ${message.type === 'success' ? 'border-[#b4a078] bg-[#b4a078]/10 text-[#8a7a5a]' : 'border-red-300 bg-red-50 text-red-500'}`}>
+                    {message.text}
+                  </div>
+                )}
+
+                {/* --- FORM 1: GARMENTS --- */}
+                {activeTab === 'garments' && (
+                  <form onSubmit={handleProductSubmit} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <input type="text" name="name" value={productData.name} onChange={e => setProductData({...productData, name: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Garment Title" required />
+                      <input type="number" name="price" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Price (INR)" required min="0" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <select name="category" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})} className="input-field text-[#1a1a1a] appearance-none bg-transparent" required>
+                        <option value="" disabled className="text-[#aaa]">Select Category</option>
+                        <option value="Bridal">Bridal</option>
+                        <option value="Sarees">Sarees</option>
+                        <option value="Menswear">Menswear</option>
+                        <option value="Jewellery">Jewellery</option>
+                        <option value="Accessories">Accessories</option>
+                      </select>
+
+                      <select name="belongsToCollection" value={productData.belongsToCollection} onChange={e => setProductData({...productData, belongsToCollection: e.target.value})} className="input-field text-[#1a1a1a] appearance-none bg-transparent">
+                        <option value="">Standard Catalog (No Collection)</option>
+                        {myCollections.map(c => <option key={c._id} value={c.title}>{c.title}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="relative">
+                      <input type="file" accept="image/*" ref={fileInputRef} onChange={e => handleImageUpload(e, false)} className="hidden" />
+                      <button type="button" onClick={() => fileInputRef.current.click()} className="w-full py-4 border-b border-[#ccc] flex items-center justify-between text-[11px] font-sans tracking-[2px] uppercase text-[#1a1a1a] hover:border-[#1a1a1a] transition-colors">
+                        <span className="truncate pr-4 opacity-70">{productData.image ? 'Image Uploaded ✓' : 'Upload Local Image'}</span>
+                        <UploadCloud size={16} className="text-[#b4a078]" />
+                      </button>
+                    </div>
+
+                    {productData.image && <div className="w-24 h-32 bg-[#eee] border border-[#e8e6e2] overflow-hidden"><img src={productData.image} alt="Preview" className="w-full h-full object-cover" /></div>}
+                    <textarea name="description" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} className="input-field text-[#1a1a1a] resize-none h-24" placeholder="Story & Heritage Description..." required></textarea>
+                    
+                    <button type="submit" disabled={loading} className="luxury-btn luxury-btn-filled w-full text-center disabled:opacity-50">
+                      <span>{loading ? 'Processing...' : isEditing ? 'Update Garment' : 'Publish Garment'}</span>
+                    </button>
+                  </form>
+                )}
+
+                {/* --- FORM 2: COLLECTIONS --- */}
+                {activeTab === 'collections' && (
+                  <form onSubmit={handleCollectionSubmit} className="space-y-8">
+                    <input type="text" value={collectionData.title} onChange={e => setCollectionData({...collectionData, title: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Collection Title (e.g. The Bridal Edit)" required />
+                    <input type="text" value={collectionData.subtitle} onChange={e => setCollectionData({...collectionData, subtitle: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Subtitle (e.g. Timeless traditions)" required />
+                    
+                    <div>
+                      <p className="font-sans text-[10px] tracking-[2px] uppercase text-[#666] mb-3">Cover Image / Video</p>
+                      <input type="file" accept="image/*,video/mp4" onChange={e => handleImageUpload(e, true)} className="font-sans text-sm text-[#1a1a1a] file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-[10px] file:tracking-widest file:uppercase file:bg-[#1a1a1a] file:text-[#faf8f5] hover:file:bg-[#b4a078] file:transition-colors file:cursor-pointer" required={!collectionData.image} />
+                    </div>
+
+                    {collectionData.image && (
+                      <div className="w-full h-48 bg-[#eee] border border-[#e8e6e2] overflow-hidden">
+                        {collectionData.image.includes('video') || collectionData.image.endsWith('.mp4') ? (
+                          <video src={collectionData.image} autoPlay loop muted className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={collectionData.image} alt="Preview" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                    )}
+                    
+                    <button type="submit" disabled={loading} className="luxury-btn luxury-btn-filled w-full text-center disabled:opacity-50">
+                      <span>{loading ? 'Processing...' : 'Publish Collection to Home'}</span>
+                    </button>
+                  </form>
+                )}
+
+                {/* --- STATE 3: ORDERS PLACEHOLDER --- */}
+                {activeTab === 'orders' && (
+                  <div className="text-center py-20">
+                     <Package size={48} className="mx-auto text-[#d4c5a9] mb-4" strokeWidth={1}/>
+                     <h3 className="font-serif text-2xl text-[#1a1a1a] mb-2">Order Management</h3>
+                     <p className="font-sans text-[11px] text-[#666] tracking-widest uppercase">Review and fulfill your client orders from the archive panel.</p>
+                  </div>
+                )}
+
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="lg:col-span-5">
+            <Reveal delay={0.4}>
+              <div className="sticky top-32">
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#e8e6e2]">
+                  <div className="flex items-center gap-3">
+                    <Archive size={20} className="text-[#b4a078]" />
+                    <h2 className="font-serif text-2xl tracking-[2px] text-[#1a1a1a]">Archives</h2>
+                  </div>
+                  <span className="font-sans text-[10px] tracking-[2px] text-[#999] uppercase">
+                    {activeTab === 'garments' && `${myProducts.length} Items`}
+                    {activeTab === 'collections' && `${myCollections.length} Items`}
+                    {activeTab === 'orders' && `${myOrders.length} Orders`}
+                  </span>
+                </div>
+
+                <div className="max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#d4c5a9] scrollbar-track-transparent">
+                  {fetchingData ? (
+                    <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#b4a078] border-t-transparent rounded-full animate-spin"></div></div>
+                  ) : (
+                    <div className="space-y-6">
+                      
+                      {/* ARCHIVE 1: GARMENTS */}
+                      {activeTab === 'garments' && myProducts.length === 0 && <p className="font-sans text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">Your ledger is empty.</p>}
+                      {activeTab === 'garments' && myProducts.map((product) => (
+                        <div key={product._id} className="flex items-center gap-4 group bg-[#f5f3f0] border border-transparent hover:border-[#e8e6e2] p-2 transition-colors">
+                          <img src={product.image} alt={product.name} className="w-16 h-24 object-cover bg-[#eee]" />
+                          <div className="flex-1">
+                            <p className="font-sans text-[9px] tracking-[2px] text-[#b4a078] uppercase mb-1">{product.category}</p>
+                            <h3 className="font-serif text-lg text-[#1a1a1a] tracking-wide leading-tight mb-1">{product.name}</h3>
+                            {product.belongsToCollection && <p className="font-sans text-[9px] text-[#888] tracking-widest uppercase mb-1">Col: {product.belongsToCollection}</p>}
+                            <p className="font-sans text-[11px] text-[#666] tracking-wide">INR {product.price?.toLocaleString('en-IN')}</p>
+                          </div>
+                          <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                            <button onClick={() => handleEditClick(product)} className="p-2 text-[#ccc] hover:text-[#b4a078] transition-colors" title="Edit Garment"><Edit2 size={16} strokeWidth={1.5} /></button>
+                            <button onClick={() => handleDeleteProduct(product._id)} className="p-2 text-[#ccc] hover:text-red-500 transition-colors" title="Remove Garment"><Trash2 size={16} strokeWidth={1.5} /></button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* ARCHIVE 2: COLLECTIONS */}
+                      {activeTab === 'collections' && myCollections.length === 0 && <p className="font-sans text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">No collections curated yet.</p>}
+                      {activeTab === 'collections' && myCollections.map((col) => (
+                        <div key={col._id} className="flex items-center gap-4 group bg-[#f5f3f0] border border-transparent hover:border-[#e8e6e2] p-2 transition-colors">
+                          <div className="w-24 h-16 bg-[#eee] overflow-hidden">
+                            {col.image.includes('video') || col.image.endsWith('.mp4') ? (
+                              <video src={col.image} className="w-full h-full object-cover" />
+                            ) : (
+                              <img src={col.image} alt={col.title} className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-sans text-[9px] tracking-[2px] text-[#b4a078] uppercase mb-1">{col.subtitle}</p>
+                            <h3 className="font-serif text-lg text-[#1a1a1a] tracking-wide leading-tight mb-1">{col.title}</h3>
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                            <button onClick={() => handleDeleteCollection(col._id)} className="p-2 text-[#ccc] hover:text-red-500 transition-colors" title="Remove Collection"><Trash2 size={16} strokeWidth={1.5} /></button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* 🌟 ARCHIVE 3: CLIENT ORDERS WITH DYNAMIC DROPDOWN 🌟 */}
+                      {activeTab === 'orders' && myOrders.length === 0 && (
+                        <p className="font-sans text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">No client orders yet.</p>
+                      )}
+                      {activeTab === 'orders' && myOrders.map((order) => (
+                        <div key={order._id} className="bg-[#f5f3f0] border border-[#e8e6e2] p-6 mb-6">
+                          <div className="flex justify-between border-b border-[#e8e6e2] pb-4 mb-4">
+                            <div>
+                              <p className="font-sans text-[9px] tracking-widest uppercase text-[#b4a078] mb-1">Order #{order._id.slice(-6)}</p>
+                              <p className="font-serif text-lg text-[#1a1a1a]">{order.user?.name || "Guest Patron"}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-sans text-[9px] tracking-widest uppercase text-[#999] mb-2">{new Date(order.createdAt).toLocaleDateString()}</p>
+                              
+                              <select 
+                                  value={order.status || 'Order Received'}
+                                  onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
+                                  className="font-sans text-[9px] tracking-widest uppercase border border-[#b4a078] bg-transparent text-[#1a1a1a] p-1 focus:outline-none cursor-pointer hover:bg-[#b4a078] hover:text-[#faf8f5] transition-colors"
+                              >
+                                  <option value="Order Received" className="bg-[#faf8f5] text-[#1a1a1a]">Order Received</option>
+                                  <option value="In Transit" className="bg-[#faf8f5] text-[#1a1a1a]">In Transit</option>
+                                  <option value="Out for Delivery" className="bg-[#faf8f5] text-[#1a1a1a]">Out for Delivery</option>
+                                  <option value="Delivered" className="bg-[#faf8f5] text-[#1a1a1a]">Delivered</option>
+                                  <option value="Delayed" className="bg-[#faf8f5] text-[#1a1a1a]">Delayed</option>
+                              </select>
+
+                            </div>
+                          </div>
+                          
+                          <div className="mb-4">
+                            <p className="font-sans text-[10px] tracking-[2px] uppercase text-[#666] mb-2 flex items-center gap-1">Shipping Destination:</p>
+                            <p className="font-serif text-sm text-[#1a1a1a] leading-relaxed">
+                              {order.shippingAddress.address}<br/>
+                              {order.shippingAddress.city}, {order.shippingAddress.postalCode}<br/>
+                              {order.shippingAddress.country}
+                            </p>
+                          </div>
+
+                          <div className="space-y-3 bg-white p-4 border border-[#eee]">
+                            {order.orderItems.filter(item => item.seller === user._id).map(item => (
+                              <div key={item._id} className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                   <img src={item.image} className="w-8 h-10 object-cover" alt={item.name} />
+                                   <p className="font-serif text-sm">{item.name} <span className="font-sans text-[9px] text-[#999]">x {item.qty}</span></p>
+                                </div>
+                                <p className="font-sans text-[11px] text-[#666]">INR {(item.price * item.qty).toLocaleString('en-IN')}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+        </div>
       </div>
     </div>
   );

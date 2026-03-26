@@ -25,6 +25,7 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a category (e.g., Lehengas, Sarees, Menswear)'],
     },
+    belongsToCollection: { type: String, default: '' },
     // For Phase 1 (free basic tools), we will just store an image URL (like a link from Unsplash or Imgur). 
     // Later, you will replace this with an AWS S3 upload link.
     image: {

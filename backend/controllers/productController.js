@@ -93,3 +93,30 @@ exports.deleteProduct = async (req, res) => {
         res.status(500).json({ message: 'Server error during deletion', error: error.message });
     }
 };
+// @desc    Update a product (Edit)
+// @route   PUT /api/products/:id
+// @access  Private/Seller
+exports.updateProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Garment not found' });
+        }
+
+        // Security Check: Make sure the artisan owns this garment
+        if (product.user.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ message: 'Not authorized to edit this garment' });
+        }
+
+        const updatedProduct = await Product.findByIdAndUpdate(
+            req.params.id, 
+            req.body, 
+            { new: true } // Returns the newly updated document
+        );
+
+        res.status(200).json(updatedProduct);
+    } catch (error) {
+        res.status(500).json({ message: 'Failed to update garment', error: error.message });
+    }
+};

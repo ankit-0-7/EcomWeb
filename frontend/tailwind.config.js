@@ -8,23 +8,22 @@ export default {
     extend: {
       colors: {
         heritage: {
-          bg: '#121212',         // Deep charcoal/almost black background
-          surface: '#1E1E1E',    // Slightly lighter dark shade for cards/forms
-          primary: '#7B1818',    // Deep Sabyasachi signature maroon/red
-          primaryHover: '#5A1111', // Darker maroon for hover states
-          gold: '#C5A059',       // Antique muted gold for accents and buttons
-          goldHover: '#A88746',  // Darker vintage gold
-          textLight: '#F4F0E6',  // Soft parchment off-white for readable text
-          border: '#333333'      // Subtle dark borders
+          bg: '#faf8f5',         // Maison Light Cream background
+          surface: '#f5f3f0',    // Slightly darker cream for cards/forms
+          primary: '#1a1a1a',    // Deep Charcoal (replaces the red)
+          primaryHover: '#333333', // Lighter charcoal for hover states
+          gold: '#b4a078',       // Maison Muted Gold
+          goldHover: '#9a8763',  // Darker vintage gold
+          textLight: '#1a1a1a',  // MAPPED TO DARK: Keeps existing code from breaking!
+          border: '#e8e6e2'      // Soft light borders
         }
       },
       fontFamily: {
-        // 'Cormorant Garamond' gives that highly traditional, luxury editorial feel
         serif: ['"Cormorant Garamond"', 'serif'], 
         sans: ['"Montserrat"', 'sans-serif'],
       },
       letterSpacing: {
-        widest: '.25em', // Exaggerated spacing for luxury brand headers
+        widest: '.25em', 
       }
     },
   },

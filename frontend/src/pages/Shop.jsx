@@ -1,115 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { CartContext } from '../context/CartContext';
+import { WishlistContext } from '../context/WishlistContext';
+import { AuthContext } from '../context/AuthContext';
+import { Reveal } from '../components/UIElements';
+import { Heart } from 'lucide-react';
+
+const defaultAssets = {
+  "All": { title: "The Boutique", subtitle: "New Season Arrivals", type: "image", src: "https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?w=1400&q=80" },
+  "Bridal": { title: "Bridal Couture", subtitle: "A Walk To Remember", type: "video", src: "/hero-video.mp4" },
+  "Sarees": { title: "Sarees & Weaves", subtitle: "Six Yards of Grace", type: "image", src: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&q=80" },
+  "Menswear": { title: "Menswear", subtitle: "Tailored Heritage", type: "image", src: "https://images.unsplash.com/photo-1617120084333-a26189ea7111?w=1400&q=80" },
+  "Jewellery": { title: "Fine Jewellery", subtitle: "Heirlooms of Tomorrow", type: "image", src: "https://images.unsplash.com/photo-1599643477874-1065c711a7c7?w=1400&q=80" }
+};
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
+  const [dynamicCollections, setDynamicCollections] = useState([]); // 🌟 NEW: Fetch dynamic collections for the banner
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const location = useLocation();
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [collectionQuery, setCollectionQuery] = useState(""); // 🌟 NEW: Track selected collection
 
-  // Fetch the products from your Node.js backend when the page loads
+  const { addToCart } = useContext(CartContext);
+  const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  // 🌟 WATCH THE URL FOR CHANGES
   useEffect(() => {
-    const fetchProducts = async () => {
+    const params = new URLSearchParams(location.search);
+    const categoryFromUrl = params.get('category');
+    const searchFromUrl = params.get('search');
+    const collectionFromUrl = params.get('collection');
+
+    setSearchQuery(searchFromUrl || "");
+    setCollectionQuery(collectionFromUrl || "");
+    
+    if (searchFromUrl || collectionFromUrl) {
+      setActiveFilter("All"); // Clear category buttons if searching or viewing a collection
+    } else {
+      setActiveFilter(categoryFromUrl || "All");
+    }
+  }, [location.search]);
+
+  // FETCH DATA
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/products');
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to load collection');
-        }
-
-        setProducts(data);
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
+        const [prodRes, colRes] = await Promise.all([
+            fetch('/api/products'),
+            fetch('/api/collections')
+        ]);
+        if (prodRes.ok) setProducts(await prodRes.json());
+        if (colRes.ok) setDynamicCollections(await colRes.json());
+      } catch (err) { setError(err.message); } 
+      finally { setLoading(false); }
     };
-
-    fetchProducts();
+    fetchData();
   }, []);
 
+  const categories = ["All", "Sarees", "Bridal", "Menswear", "Jewellery", "Accessories", "Couture"];
+  
+  // 🌟 THE FILTERING LOGIC
+  let filteredProducts = products;
+  
+  if (collectionQuery) {
+      filteredProducts = filteredProducts.filter(p => p.belongsToCollection === collectionQuery);
+  } else if (activeFilter !== "All") {
+      filteredProducts = filteredProducts.filter(p => p.category === activeFilter);
+  }
+  
+  if (searchQuery) {
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      filteredProducts = filteredProducts.filter(p => 
+          p.name.toLowerCase().includes(lowerCaseQuery) || 
+          p.description.toLowerCase().includes(lowerCaseQuery) ||
+          p.category.toLowerCase().includes(lowerCaseQuery)
+      );
+  }
+
+  // 🌟 DYNAMIC HERO BANNER LOGIC
+  let activeHero;
+  if (searchQuery) {
+      activeHero = { title: `"${searchQuery}"`, subtitle: "Search Results", type: "image", src: defaultAssets["All"].src };
+  } else if (collectionQuery) {
+      // Find the specific collection the user clicked to use its image!
+      const matchedCollection = dynamicCollections.find(c => c.title === collectionQuery);
+      if (matchedCollection) {
+          activeHero = { 
+              title: matchedCollection.title, 
+              subtitle: matchedCollection.subtitle, 
+              type: matchedCollection.image.includes('video') || matchedCollection.image.endsWith('.mp4') ? 'video' : 'image', 
+              src: matchedCollection.image 
+          };
+      } else {
+          activeHero = defaultAssets["All"]; // Fallback
+      }
+  } else {
+      activeHero = defaultAssets[activeFilter] || defaultAssets["All"];
+  }
+
   return (
-    <div className="min-h-screen bg-heritage-bg pt-24 pb-12 px-4 sm:px-8 relative">
+    <div className="bg-[#faf8f5] min-h-screen">
       
-      {/* Opulent Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[600px] bg-heritage-primary opacity-5 blur-[150px] pointer-events-none"></div>
-
-      <div className="max-w-7xl mx-auto z-10 relative">
-        
-        {/* Heritage Header */}
-        <div className="mb-16 text-center">
-          <h2 className="text-xs font-sans text-heritage-gold tracking-[0.4em] uppercase mb-4">
-            Chapter I
-          </h2>
-          <h1 className="text-5xl md:text-6xl font-serif text-heritage-textLight tracking-wider">
-            The Heritage Collection
-          </h1>
-          <div className="w-24 h-px bg-heritage-gold mx-auto mt-8 opacity-50"></div>
+      {/* --- DYNAMIC HERO BANNER --- */}
+      <div className="relative w-full h-[40vh] md:h-[50vh] mt-[80px] bg-[#1a1a1a] overflow-hidden">
+        {activeHero.type === 'video' ? (
+          <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-60">
+            <source src={activeHero.src} type="video/mp4" />
+          </video>
+        ) : (
+          <img src={activeHero.src} alt={activeHero.title} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/80 to-transparent"></div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+          <Reveal><p className="font-sans text-[10px] tracking-[5px] uppercase text-[#d4c5a9] mb-4">{activeHero.subtitle}</p></Reveal>
+          <Reveal delay={0.1}><h2 className="font-serif text-4xl md:text-6xl font-light tracking-[3px] text-[#faf8f5]">{activeHero.title}</h2></Reveal>
         </div>
+      </div>
 
-        {/* Status Handling */}
-        {loading && (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-2 border-heritage-gold border-t-transparent rounded-full animate-spin"></div>
+      <section id="shop" className="pt-16 pb-[100px] px-6 md:px-10 max-w-[1400px] mx-auto">
+        
+        {/* Category Filter Buttons */}
+        <Reveal delay={0.2}>
+          <div className="flex justify-center gap-3 mb-16 flex-wrap font-sans">
+            {categories.map(c => (
+              <button 
+                key={c} 
+                className={`filter-btn ${activeFilter === c && !searchQuery && !collectionQuery ? "active" : ""}`} 
+                onClick={() => {
+                  navigate(`/shop${c === 'All' ? '' : `?category=${c}`}`);
+                }}
+              >
+                {c}
+              </button>
+            ))}
           </div>
-        )}
+        </Reveal>
 
-        {error && (
-          <div className="text-center py-20 text-red-400 font-sans tracking-widest text-sm uppercase">
-            Error: {error}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && !error && products.length === 0 && (
-          <div className="text-center py-20 text-heritage-textLight opacity-60 font-sans tracking-widest text-sm uppercase">
-            The Atelier is currently preparing new garments. Please return later.
-          </div>
+        {loading && <div className="flex justify-center py-10"><div className="w-8 h-8 border-2 border-[#b4a078] border-t-transparent rounded-full animate-spin"></div></div>}
+        {error && <div className="text-center py-10 text-red-500 font-sans tracking-widest text-sm uppercase">{error}</div>}
+        
+        {!loading && !error && filteredProducts.length === 0 && (
+          <p className="text-center font-sans text-[12px] tracking-[2px] uppercase text-[#888] mt-10">
+              {searchQuery ? `No garments found matching "${searchQuery}".` : "The Atelier is curating new garments for this collection."}
+          </p>
         )}
 
         {/* The Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-          {products.map((product) => (
-            <div key={product._id} className="group cursor-pointer">
-              
-              {/* Image Container (Editorial Aspect Ratio) */}
-              <div className="relative aspect-[3/4] overflow-hidden mb-6 border border-heritage-border group-hover:border-heritage-gold/50 transition-colors duration-500">
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-in-out opacity-90 group-hover:opacity-100"
-                />
-                
-                {/* Dark overlay that appears on hover with the correctly formatted Link */}
-                <div className="absolute inset-0 bg-heritage-bg/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-                  <Link 
-                    to={`/product/${product._id}`}
-                    className="bg-heritage-primary text-heritage-textLight font-sans text-xs uppercase tracking-widest py-3 px-8 hover:bg-heritage-gold transition-colors shadow-2xl"
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {filteredProducts.map((p, i) => (
+            <Reveal key={p._id} delay={0.1 + (i % 4) * 0.08}>
+              <div className="product-card group cursor-pointer" onClick={() => navigate(`/product/${p._id}`)}>
+                <div className="relative overflow-hidden h-[380px] bg-[#eee]">
+                  <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 group-hover:brightness-90" />
+                  
+                  <div className="overlay group-hover:bg-black/25">
+                    <button 
+                      className="luxury-btn luxury-btn-filled px-8 py-3 text-[10px] group-hover:opacity-100 group-hover:translate-y-0" 
+                      onClick={e => { 
+                        e.stopPropagation(); 
+                        if (!user) { navigate('/login'); return; }
+                        addToCart({ ...p, id: p._id, qty: 1 }); 
+                        alert("Added to bag!");
+                      }}
+                    >
+                      <span>Add to Bag</span>
+                    </button>
+                  </div>
+                  
+                  <span className="tag absolute top-4 left-4 bg-white/80 text-[#1a1a1a] px-3 py-1 text-[9px] tracking-[2px] uppercase font-medium">{p.tag || "NEW SEASON"}</span>
+
+                  <button 
+                    onClick={e => { 
+                      e.stopPropagation(); 
+                      if (!user) { navigate('/login'); return; }
+                      toggleWishlist(p); 
+                    }} 
+                    className="absolute top-4 right-4 bg-white/90 border-none w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-colors hover:bg-white shadow-sm z-10"
                   >
-                    View Details
-                  </Link>
+                    <Heart size={16} strokeWidth={1.5} fill={isInWishlist(p._id) ? "#1a1a1a" : "none"} color="#1a1a1a" />
+                  </button>
+                </div>
+                
+                <div className="py-5 px-1 font-serif">
+                  <p className="font-sans text-[10px] tracking-[2px] text-[#999] uppercase mb-1.5">{p.category}</p>
+                  <h4 className="text-lg font-light tracking-[1px] mb-1.5 text-[#1a1a1a] group-hover:text-[#b4a078] transition-colors">{p.name}</h4>
+                  <p className="text-sm text-[#666]">INR {p.price?.toLocaleString('en-IN')}</p>
                 </div>
               </div>
-
-              {/* Garment Details */}
-              <div className="text-center">
-                <p className="text-[10px] font-sans text-heritage-gold tracking-widest uppercase mb-2 opacity-80">
-                  {product.category}
-                </p>
-                <h3 className="text-xl font-serif text-heritage-textLight tracking-wide mb-2 line-clamp-1">
-                  {product.name}
-                </h3>
-                <p className="text-sm font-sans text-heritage-textLight opacity-70 tracking-wider">
-                  INR {product.price?.toLocaleString('en-IN')}
-                </p>
-                <p className="text-[10px] font-sans text-heritage-textLight opacity-40 tracking-widest uppercase mt-3">
-                  Curated by {product.user?.name || 'Artisan'}
-                </p>
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 };
