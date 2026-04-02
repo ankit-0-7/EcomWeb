@@ -11,20 +11,21 @@ const {
     updateProduct 
 } = require('../controllers/productController'); 
 
-const { protect, seller } = require('../middleware/authMiddleware');
+// 🌟 FIXED: Imported 'admin' instead of 'seller'
+const { protect, admin } = require('../middleware/authMiddleware');
 
 // Public Routes
 router.get('/', getProducts);
 
-// Protected Seller Routes
-router.get('/seller', protect, seller, getSellerProducts); // MUST BE BEFORE /:id
-router.post('/', protect, seller, createProduct);
+// 🌟 FIXED: Replaced 'seller' with 'admin' to match your new dashboard role
+router.get('/seller', protect, admin, getSellerProducts); // Keep the path as /seller so we don't break your controller
+router.post('/', protect, admin, createProduct);
 
 // Public Route (Dynamic ID)
 router.get('/:id', getProductById);
 
-// Protected Seller Route (Dynamic IDs)
-router.delete('/:id', protect, seller, deleteProduct);
-router.put('/:id', protect, seller, updateProduct); // The new Edit route!
+// 🌟 FIXED: Replaced 'seller' with 'admin' on these routes too
+router.delete('/:id', protect, admin, deleteProduct);
+router.put('/:id', protect, admin, updateProduct); // The new Edit route!
 
 module.exports = router;

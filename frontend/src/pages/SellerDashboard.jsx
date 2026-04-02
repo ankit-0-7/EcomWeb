@@ -160,7 +160,6 @@ const SellerDashboard = () => {
         body: JSON.stringify({ status: newStatus })
       });
       if (res.ok) {
-        // Instantly update the UI without a page refresh
         setMyOrders(myOrders.map(order => 
             order._id === orderId ? { ...order, status: newStatus } : order
         ));
@@ -169,17 +168,37 @@ const SellerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] pt-32 pb-20 px-6 md:px-12">
+    <div className="min-h-screen bg-[#faf8f5] pt-32 pb-20 px-6 md:px-12 selection:bg-[#5A1218] selection:text-[#faf8f5]">
       <div className="max-w-[1200px] mx-auto">
         
         <Reveal>
           <div className="text-center mb-12">
-            <h1 className="font-serif text-4xl md:text-5xl font-light tracking-[3px] text-[#1a1a1a] mb-8">Artisan Workspace</h1>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-4xl md:text-5xl font-normal tracking-[3px] text-[#1a1a1a] mb-8">
+              Artisan Workspace
+            </h1>
             
             <div className="flex justify-center flex-wrap gap-6 md:gap-10 border-b border-[#e8e6e2] pb-4">
-              <button onClick={() => setActiveTab('garments')} className={`font-serif text-xl tracking-[2px] transition-colors ${activeTab === 'garments' ? 'text-[#b4a078]' : 'text-[#999] hover:text-[#1a1a1a]'}`}>Manage Garments</button>
-              <button onClick={() => setActiveTab('collections')} className={`font-serif text-xl tracking-[2px] transition-colors ${activeTab === 'collections' ? 'text-[#b4a078]' : 'text-[#999] hover:text-[#1a1a1a]'}`}>Curate Collections</button>
-              <button onClick={() => setActiveTab('orders')} className={`font-serif text-xl tracking-[2px] transition-colors ${activeTab === 'orders' ? 'text-[#b4a078]' : 'text-[#999] hover:text-[#1a1a1a]'}`}>Client Orders</button>
+              <button 
+                onClick={() => setActiveTab('garments')} 
+                style={{ fontFamily: "'Montserrat', sans-serif" }} 
+                className={`text-[11px] tracking-[2px] uppercase px-4 py-2 transition-colors ${activeTab === 'garments' ? 'text-[#5A1218] border-b border-[#5A1218]' : 'text-[#999] hover:text-[#1a1a1a]'}`}
+              >
+                Manage Garments
+              </button>
+              <button 
+                onClick={() => setActiveTab('collections')} 
+                style={{ fontFamily: "'Montserrat', sans-serif" }} 
+                className={`text-[11px] tracking-[2px] uppercase px-4 py-2 transition-colors ${activeTab === 'collections' ? 'text-[#5A1218] border-b border-[#5A1218]' : 'text-[#999] hover:text-[#1a1a1a]'}`}
+              >
+                Curate Collections
+              </button>
+              <button 
+                onClick={() => setActiveTab('orders')} 
+                style={{ fontFamily: "'Montserrat', sans-serif" }} 
+                className={`text-[11px] tracking-[2px] uppercase px-4 py-2 transition-colors ${activeTab === 'orders' ? 'text-[#5A1218] border-b border-[#5A1218]' : 'text-[#999] hover:text-[#1a1a1a]'}`}
+              >
+                Client Orders
+              </button>
             </div>
           </div>
         </Reveal>
@@ -188,41 +207,43 @@ const SellerDashboard = () => {
           
           <div className="lg:col-span-7">
             <Reveal delay={0.2}>
-              <div className={`bg-[#f5f3f0] p-10 md:p-14 border transition-colors duration-500 ${isEditing ? 'border-[#b4a078] shadow-lg shadow-[#b4a078]/10' : 'border-[#e8e6e2]'}`}>
+              <div className={`bg-[#f5f3f0] p-10 md:p-14 border transition-colors duration-500 ${isEditing ? 'border-[#5A1218] shadow-lg shadow-[#5A1218]/10' : 'border-[#e8e6e2]'}`}>
                 
                 <div className="flex items-center justify-between mb-10">
                   <div className="flex items-center gap-3">
-                    {activeTab === 'garments' && (isEditing ? <Edit2 size={20} className="text-[#b4a078]" /> : <Plus size={20} className="text-[#b4a078]" />)}
-                    {activeTab === 'collections' && <Layout size={20} className="text-[#b4a078]" />}
-                    {activeTab === 'orders' && <Package size={20} className="text-[#b4a078]" />}
+                    {activeTab === 'garments' && (isEditing ? <Edit2 size={20} className="text-[#5A1218]" /> : <Plus size={20} className="text-[#5A1218]" />)}
+                    {activeTab === 'collections' && <Layout size={20} className="text-[#5A1218]" />}
+                    {activeTab === 'orders' && <Package size={20} className="text-[#5A1218]" />}
                     
-                    <h2 className="font-serif text-2xl tracking-[2px] text-[#1a1a1a]">
+                    <h2 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-3xl tracking-[1px] text-[#1a1a1a]">
                       {activeTab === 'garments' && (isEditing ? 'Modify Garment' : 'Curate New Garment')}
                       {activeTab === 'collections' && 'Curate Home Collection'}
                       {activeTab === 'orders' && 'Order Management'}
                     </h2>
                   </div>
                   {isEditing && activeTab === 'garments' && (
-                    <button onClick={resetForm} className="text-[10px] font-sans tracking-widest uppercase text-[#999] hover:text-red-500 flex items-center gap-1"><X size={12}/> Cancel Edit</button>
+                    <button onClick={resetForm} style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-widest uppercase text-[#999] hover:text-red-800 flex items-center gap-1">
+                      <X size={12}/> Cancel Edit
+                    </button>
                   )}
                 </div>
 
                 {message && (
-                  <div className={`mb-8 p-4 border text-[10px] tracking-[2px] uppercase font-sans text-center ${message.type === 'success' ? 'border-[#b4a078] bg-[#b4a078]/10 text-[#8a7a5a]' : 'border-red-300 bg-red-50 text-red-500'}`}>
+                  <div style={{ fontFamily: "'Montserrat', sans-serif" }} className={`mb-8 p-4 border text-[10px] tracking-[2px] uppercase text-center ${message.type === 'success' ? 'border-[#5A1218] bg-[#5A1218]/10 text-[#5A1218]' : 'border-red-800 bg-red-50 text-red-800'}`}>
                     {message.text}
                   </div>
                 )}
 
                 {/* --- FORM 1: GARMENTS --- */}
                 {activeTab === 'garments' && (
-                  <form onSubmit={handleProductSubmit} className="space-y-8">
+                  <form onSubmit={handleProductSubmit} className="space-y-8" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <input type="text" name="name" value={productData.name} onChange={e => setProductData({...productData, name: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Garment Title" required />
-                      <input type="number" name="price" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Price (INR)" required min="0" />
+                      <input type="text" name="name" value={productData.name} onChange={e => setProductData({...productData, name: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] placeholder:text-[#999] transition-colors" placeholder="Garment Title" required />
+                      <input type="number" name="price" value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] placeholder:text-[#999] transition-colors" placeholder="Price (INR)" required min="0" />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <select name="category" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})} className="input-field text-[#1a1a1a] appearance-none bg-transparent" required>
+                      <select name="category" value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] appearance-none transition-colors" required>
                         <option value="" disabled className="text-[#aaa]">Select Category</option>
                         <option value="Bridal">Bridal</option>
                         <option value="Sarees">Sarees</option>
@@ -231,7 +252,7 @@ const SellerDashboard = () => {
                         <option value="Accessories">Accessories</option>
                       </select>
 
-                      <select name="belongsToCollection" value={productData.belongsToCollection} onChange={e => setProductData({...productData, belongsToCollection: e.target.value})} className="input-field text-[#1a1a1a] appearance-none bg-transparent">
+                      <select name="belongsToCollection" value={productData.belongsToCollection} onChange={e => setProductData({...productData, belongsToCollection: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] appearance-none transition-colors">
                         <option value="">Standard Catalog (No Collection)</option>
                         {myCollections.map(c => <option key={c._id} value={c.title}>{c.title}</option>)}
                       </select>
@@ -239,16 +260,17 @@ const SellerDashboard = () => {
 
                     <div className="relative">
                       <input type="file" accept="image/*" ref={fileInputRef} onChange={e => handleImageUpload(e, false)} className="hidden" />
-                      <button type="button" onClick={() => fileInputRef.current.click()} className="w-full py-4 border-b border-[#ccc] flex items-center justify-between text-[11px] font-sans tracking-[2px] uppercase text-[#1a1a1a] hover:border-[#1a1a1a] transition-colors">
+                      <button type="button" onClick={() => fileInputRef.current.click()} className="w-full py-4 border-b border-[#ccc] flex items-center justify-between text-[11px] tracking-[2px] uppercase text-[#1a1a1a] hover:border-[#5A1218] transition-colors focus:outline-none">
                         <span className="truncate pr-4 opacity-70">{productData.image ? 'Image Uploaded ✓' : 'Upload Local Image'}</span>
-                        <UploadCloud size={16} className="text-[#b4a078]" />
+                        <UploadCloud size={16} className="text-[#5A1218]" />
                       </button>
                     </div>
 
                     {productData.image && <div className="w-24 h-32 bg-[#eee] border border-[#e8e6e2] overflow-hidden"><img src={productData.image} alt="Preview" className="w-full h-full object-cover" /></div>}
-                    <textarea name="description" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} className="input-field text-[#1a1a1a] resize-none h-24" placeholder="Story & Heritage Description..." required></textarea>
                     
-                    <button type="submit" disabled={loading} className="luxury-btn luxury-btn-filled w-full text-center disabled:opacity-50">
+                    <textarea name="description" value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] placeholder:text-[#999] transition-colors resize-none h-24" placeholder="Story & Heritage Description..." required></textarea>
+                    
+                    <button type="submit" disabled={loading} className="w-full bg-[#5A1218] text-[#faf8f5] px-10 py-4 text-[11px] tracking-[0.2em] uppercase font-medium hover:bg-[#3a0a0f] transition-colors shadow-lg disabled:opacity-50">
                       <span>{loading ? 'Processing...' : isEditing ? 'Update Garment' : 'Publish Garment'}</span>
                     </button>
                   </form>
@@ -256,13 +278,13 @@ const SellerDashboard = () => {
 
                 {/* --- FORM 2: COLLECTIONS --- */}
                 {activeTab === 'collections' && (
-                  <form onSubmit={handleCollectionSubmit} className="space-y-8">
-                    <input type="text" value={collectionData.title} onChange={e => setCollectionData({...collectionData, title: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Collection Title (e.g. The Bridal Edit)" required />
-                    <input type="text" value={collectionData.subtitle} onChange={e => setCollectionData({...collectionData, subtitle: e.target.value})} className="input-field text-[#1a1a1a]" placeholder="Subtitle (e.g. Timeless traditions)" required />
+                  <form onSubmit={handleCollectionSubmit} className="space-y-8" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    <input type="text" value={collectionData.title} onChange={e => setCollectionData({...collectionData, title: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] placeholder:text-[#999] transition-colors" placeholder="Collection Title (e.g. The Bridal Edit)" required />
+                    <input type="text" value={collectionData.subtitle} onChange={e => setCollectionData({...collectionData, subtitle: e.target.value})} className="w-full bg-transparent border-b border-[#ccc] pb-3 text-[11px] tracking-widest uppercase focus:outline-none focus:border-[#5A1218] text-[#1a1a1a] placeholder:text-[#999] transition-colors" placeholder="Subtitle (e.g. Timeless traditions)" required />
                     
                     <div>
-                      <p className="font-sans text-[10px] tracking-[2px] uppercase text-[#666] mb-3">Cover Image / Video</p>
-                      <input type="file" accept="image/*,video/mp4" onChange={e => handleImageUpload(e, true)} className="font-sans text-sm text-[#1a1a1a] file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-[10px] file:tracking-widest file:uppercase file:bg-[#1a1a1a] file:text-[#faf8f5] hover:file:bg-[#b4a078] file:transition-colors file:cursor-pointer" required={!collectionData.image} />
+                      <p className="text-[10px] tracking-[2px] uppercase text-[#666] mb-3">Cover Image / Video</p>
+                      <input type="file" accept="image/*,video/mp4" onChange={e => handleImageUpload(e, true)} className="text-sm text-[#1a1a1a] file:mr-4 file:py-3 file:px-6 file:rounded-none file:border-0 file:text-[10px] file:tracking-widest file:uppercase file:bg-[#1a1a1a] file:text-[#faf8f5] hover:file:bg-[#5A1218] file:transition-colors file:cursor-pointer" required={!collectionData.image} />
                     </div>
 
                     {collectionData.image && (
@@ -275,7 +297,7 @@ const SellerDashboard = () => {
                       </div>
                     )}
                     
-                    <button type="submit" disabled={loading} className="luxury-btn luxury-btn-filled w-full text-center disabled:opacity-50">
+                    <button type="submit" disabled={loading} className="w-full bg-[#5A1218] text-[#faf8f5] px-10 py-4 text-[11px] tracking-[0.2em] uppercase font-medium hover:bg-[#3a0a0f] transition-colors shadow-lg disabled:opacity-50">
                       <span>{loading ? 'Processing...' : 'Publish Collection to Home'}</span>
                     </button>
                   </form>
@@ -284,9 +306,9 @@ const SellerDashboard = () => {
                 {/* --- STATE 3: ORDERS PLACEHOLDER --- */}
                 {activeTab === 'orders' && (
                   <div className="text-center py-20">
-                     <Package size={48} className="mx-auto text-[#d4c5a9] mb-4" strokeWidth={1}/>
-                     <h3 className="font-serif text-2xl text-[#1a1a1a] mb-2">Order Management</h3>
-                     <p className="font-sans text-[11px] text-[#666] tracking-widest uppercase">Review and fulfill your client orders from the archive panel.</p>
+                     <Package size={48} className="mx-auto text-[#ccc] mb-4" strokeWidth={1}/>
+                     <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-2xl text-[#1a1a1a] mb-2 font-normal">Order Management</h3>
+                     <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] text-[#666] tracking-widest uppercase">Review and fulfill your client orders from the archive panel.</p>
                   </div>
                 )}
 
@@ -299,44 +321,44 @@ const SellerDashboard = () => {
               <div className="sticky top-32">
                 <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#e8e6e2]">
                   <div className="flex items-center gap-3">
-                    <Archive size={20} className="text-[#b4a078]" />
-                    <h2 className="font-serif text-2xl tracking-[2px] text-[#1a1a1a]">Archives</h2>
+                    <Archive size={20} className="text-[#5A1218]" />
+                    <h2 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-2xl tracking-[1px] text-[#1a1a1a]">Archives</h2>
                   </div>
-                  <span className="font-sans text-[10px] tracking-[2px] text-[#999] uppercase">
+                  <span style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[2px] text-[#999] uppercase">
                     {activeTab === 'garments' && `${myProducts.length} Items`}
                     {activeTab === 'collections' && `${myCollections.length} Items`}
                     {activeTab === 'orders' && `${myOrders.length} Orders`}
                   </span>
                 </div>
 
-                <div className="max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#d4c5a9] scrollbar-track-transparent">
+                <div className="max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#e8e6e2] scrollbar-track-transparent">
                   {fetchingData ? (
-                    <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#b4a078] border-t-transparent rounded-full animate-spin"></div></div>
+                    <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-[#5A1218] border-t-transparent rounded-full animate-spin"></div></div>
                   ) : (
                     <div className="space-y-6">
                       
                       {/* ARCHIVE 1: GARMENTS */}
-                      {activeTab === 'garments' && myProducts.length === 0 && <p className="font-sans text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">Your ledger is empty.</p>}
+                      {activeTab === 'garments' && myProducts.length === 0 && <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">Your ledger is empty.</p>}
                       {activeTab === 'garments' && myProducts.map((product) => (
-                        <div key={product._id} className="flex items-center gap-4 group bg-[#f5f3f0] border border-transparent hover:border-[#e8e6e2] p-2 transition-colors">
+                        <div key={product._id} className="flex items-center gap-4 group bg-[#f5f3f0] border border-transparent hover:border-[#e8e6e2] p-3 transition-colors">
                           <img src={product.image} alt={product.name} className="w-16 h-24 object-cover bg-[#eee]" />
                           <div className="flex-1">
-                            <p className="font-sans text-[9px] tracking-[2px] text-[#b4a078] uppercase mb-1">{product.category}</p>
-                            <h3 className="font-serif text-lg text-[#1a1a1a] tracking-wide leading-tight mb-1">{product.name}</h3>
-                            {product.belongsToCollection && <p className="font-sans text-[9px] text-[#888] tracking-widest uppercase mb-1">Col: {product.belongsToCollection}</p>}
-                            <p className="font-sans text-[11px] text-[#666] tracking-wide">INR {product.price?.toLocaleString('en-IN')}</p>
+                            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] tracking-[2px] text-[#5A1218] uppercase mb-1">{product.category}</p>
+                            <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-xl text-[#1a1a1a] tracking-wide leading-tight mb-1">{product.name}</h3>
+                            {product.belongsToCollection && <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#888] tracking-widest uppercase mb-1">Col: {product.belongsToCollection}</p>}
+                            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] text-[#666] tracking-wide">INR {product.price?.toLocaleString('en-IN')}</p>
                           </div>
                           <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                            <button onClick={() => handleEditClick(product)} className="p-2 text-[#ccc] hover:text-[#b4a078] transition-colors" title="Edit Garment"><Edit2 size={16} strokeWidth={1.5} /></button>
-                            <button onClick={() => handleDeleteProduct(product._id)} className="p-2 text-[#ccc] hover:text-red-500 transition-colors" title="Remove Garment"><Trash2 size={16} strokeWidth={1.5} /></button>
+                            <button onClick={() => handleEditClick(product)} className="p-2 text-[#ccc] hover:text-[#5A1218] transition-colors" title="Edit Garment"><Edit2 size={16} strokeWidth={1.5} /></button>
+                            <button onClick={() => handleDeleteProduct(product._id)} className="p-2 text-[#ccc] hover:text-red-800 transition-colors" title="Remove Garment"><Trash2 size={16} strokeWidth={1.5} /></button>
                           </div>
                         </div>
                       ))}
 
                       {/* ARCHIVE 2: COLLECTIONS */}
-                      {activeTab === 'collections' && myCollections.length === 0 && <p className="font-sans text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">No collections curated yet.</p>}
+                      {activeTab === 'collections' && myCollections.length === 0 && <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">No collections curated yet.</p>}
                       {activeTab === 'collections' && myCollections.map((col) => (
-                        <div key={col._id} className="flex items-center gap-4 group bg-[#f5f3f0] border border-transparent hover:border-[#e8e6e2] p-2 transition-colors">
+                        <div key={col._id} className="flex items-center gap-4 group bg-[#f5f3f0] border border-transparent hover:border-[#e8e6e2] p-3 transition-colors">
                           <div className="w-24 h-16 bg-[#eee] overflow-hidden">
                             {col.image.includes('video') || col.image.endsWith('.mp4') ? (
                               <video src={col.image} className="w-full h-full object-cover" />
@@ -345,33 +367,34 @@ const SellerDashboard = () => {
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="font-sans text-[9px] tracking-[2px] text-[#b4a078] uppercase mb-1">{col.subtitle}</p>
-                            <h3 className="font-serif text-lg text-[#1a1a1a] tracking-wide leading-tight mb-1">{col.title}</h3>
+                            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] tracking-[2px] text-[#5A1218] uppercase mb-1">{col.subtitle}</p>
+                            <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-xl text-[#1a1a1a] tracking-wide leading-tight mb-1">{col.title}</h3>
                           </div>
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                            <button onClick={() => handleDeleteCollection(col._id)} className="p-2 text-[#ccc] hover:text-red-500 transition-colors" title="Remove Collection"><Trash2 size={16} strokeWidth={1.5} /></button>
+                            <button onClick={() => handleDeleteCollection(col._id)} className="p-2 text-[#ccc] hover:text-red-800 transition-colors" title="Remove Collection"><Trash2 size={16} strokeWidth={1.5} /></button>
                           </div>
                         </div>
                       ))}
 
-                      {/* 🌟 ARCHIVE 3: CLIENT ORDERS WITH DYNAMIC DROPDOWN 🌟 */}
+                      {/* ARCHIVE 3: CLIENT ORDERS WITH DYNAMIC DROPDOWN */}
                       {activeTab === 'orders' && myOrders.length === 0 && (
-                        <p className="font-sans text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">No client orders yet.</p>
+                        <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-[2px] text-[#999] uppercase text-center py-12 italic">No client orders yet.</p>
                       )}
                       {activeTab === 'orders' && myOrders.map((order) => (
                         <div key={order._id} className="bg-[#f5f3f0] border border-[#e8e6e2] p-6 mb-6">
                           <div className="flex justify-between border-b border-[#e8e6e2] pb-4 mb-4">
                             <div>
-                              <p className="font-sans text-[9px] tracking-widest uppercase text-[#b4a078] mb-1">Order #{order._id.slice(-6)}</p>
-                              <p className="font-serif text-lg text-[#1a1a1a]">{order.user?.name || "Guest Patron"}</p>
+                              <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] tracking-widest uppercase text-[#5A1218] mb-1">Order #{order._id.slice(-6)}</p>
+                              <p style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-xl text-[#1a1a1a]">{order.user?.name || "Guest Patron"}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-sans text-[9px] tracking-widest uppercase text-[#999] mb-2">{new Date(order.createdAt).toLocaleDateString()}</p>
+                              <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] tracking-widest uppercase text-[#999] mb-2">{new Date(order.createdAt).toLocaleDateString()}</p>
                               
                               <select 
                                   value={order.status || 'Order Received'}
                                   onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
-                                  className="font-sans text-[9px] tracking-widest uppercase border border-[#b4a078] bg-transparent text-[#1a1a1a] p-1 focus:outline-none cursor-pointer hover:bg-[#b4a078] hover:text-[#faf8f5] transition-colors"
+                                  style={{ fontFamily: "'Montserrat', sans-serif" }}
+                                  className="text-[9px] tracking-widest uppercase border border-[#ccc] bg-transparent text-[#1a1a1a] p-1.5 focus:outline-none focus:border-[#5A1218] cursor-pointer hover:bg-[#5A1218] hover:text-[#faf8f5] hover:border-[#5A1218] transition-colors"
                               >
                                   <option value="Order Received" className="bg-[#faf8f5] text-[#1a1a1a]">Order Received</option>
                                   <option value="In Transit" className="bg-[#faf8f5] text-[#1a1a1a]">In Transit</option>
@@ -384,22 +407,22 @@ const SellerDashboard = () => {
                           </div>
                           
                           <div className="mb-4">
-                            <p className="font-sans text-[10px] tracking-[2px] uppercase text-[#666] mb-2 flex items-center gap-1">Shipping Destination:</p>
-                            <p className="font-serif text-sm text-[#1a1a1a] leading-relaxed">
+                            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[2px] uppercase text-[#666] mb-2 flex items-center gap-1">Shipping Destination:</p>
+                            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] text-[#1a1a1a] leading-relaxed uppercase tracking-wider">
                               {order.shippingAddress.address}<br/>
                               {order.shippingAddress.city}, {order.shippingAddress.postalCode}<br/>
                               {order.shippingAddress.country}
                             </p>
                           </div>
 
-                          <div className="space-y-3 bg-white p-4 border border-[#eee]">
+                          <div className="space-y-3 bg-white p-4 border border-[#e8e6e2]">
                             {order.orderItems.filter(item => item.seller === user._id).map(item => (
                               <div key={item._id} className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                   <img src={item.image} className="w-8 h-10 object-cover" alt={item.name} />
-                                   <p className="font-serif text-sm">{item.name} <span className="font-sans text-[9px] text-[#999]">x {item.qty}</span></p>
+                                <div className="flex items-center gap-4">
+                                   <img src={item.image} className="w-10 h-12 object-cover border border-[#eee]" alt={item.name} />
+                                   <p style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-lg tracking-wide">{item.name} <span style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#999] ml-2 tracking-widest">x {item.qty}</span></p>
                                 </div>
-                                <p className="font-sans text-[11px] text-[#666]">INR {(item.price * item.qty).toLocaleString('en-IN')}</p>
+                                <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] font-medium text-[#1a1a1a] tracking-wider">INR {(item.price * item.qty).toLocaleString('en-IN')}</p>
                               </div>
                             ))}
                           </div>

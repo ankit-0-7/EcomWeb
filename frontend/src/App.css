@@ -1,22 +1,29 @@
+/* 🌟 Niali Counter Button */
 .counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 14px 32px;
+  color: #faf8f5;
+  background: #5A1218;
+  border: 1px solid #5A1218;
+  transition: all 0.4s ease;
   margin-bottom: 24px;
+  cursor: pointer;
 
   &:hover {
-    border-color: var(--accent-border);
+    background: #3a0a0f;
+    border-color: #3a0a0f;
   }
+  
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid #5A1218;
     outline-offset: 2px;
   }
 }
 
+/* Vite Hero Container */
 .hero {
   position: relative;
 
@@ -70,9 +77,10 @@
   }
 }
 
+/* 🌟 Niali Grid Sections */
 #next-steps {
   display: flex;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e8e6e2; /* Niali Subtle Border */
   text-align: left;
 
   & > div {
@@ -87,6 +95,7 @@
     margin-bottom: 16px;
     width: 22px;
     height: 22px;
+    color: #5A1218; /* Niali Burgundy */
   }
 
   @media (max-width: 1024px) {
@@ -96,14 +105,15 @@
 }
 
 #docs {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid #e8e6e2; /* Niali Subtle Border */
 
   @media (max-width: 1024px) {
     border-right: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #e8e6e2;
   }
 }
 
+/* 🌟 Niali Link Buttons */
 #next-steps ul {
   list-style: none;
   padding: 0;
@@ -116,20 +126,27 @@
   }
 
   a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
+    color: #1a1a1a;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: #f5f3f0; /* Niali Light Surface */
+    border: 1px solid transparent;
     display: flex;
-    padding: 6px 12px;
+    padding: 10px 16px;
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
+    transition: all 0.3s ease;
 
     &:hover {
-      box-shadow: var(--shadow);
+      background: #faf8f5;
+      border-color: #5A1218;
+      color: #5A1218;
+      box-shadow: 0 4px 12px rgba(90, 18, 24, 0.05); /* Subtle Burgundy Shadow */
     }
+    
     .button-icon {
       height: 18px;
       width: 18px;
@@ -155,12 +172,13 @@
 
 #spacer {
   height: 88px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #e8e6e2; /* Niali Subtle Border */
   @media (max-width: 1024px) {
     height: 48px;
   }
 }
 
+/* 🌟 Niali Borders for Ticks */
 .ticks {
   position: relative;
   width: 100%;
@@ -175,10 +193,10 @@
 
   &::before {
     left: 0;
-    border-left-color: var(--border);
+    border-left-color: #e8e6e2; 
   }
   &::after {
     right: 0;
-    border-right-color: var(--border);
+    border-right-color: #e8e6e2;
   }
 }

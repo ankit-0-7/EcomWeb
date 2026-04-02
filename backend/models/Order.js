@@ -8,8 +8,8 @@ const orderSchema = new mongoose.Schema({
             qty: { type: Number, required: true },
             image: { type: String, required: true },
             price: { type: Number, required: true },
-            product: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Product' },
-            seller: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' } // The Artisan (Seller)
+            product: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Product' }
+            // 🌟 THE FIX: The 'seller' field has been completely removed.
         }
     ],
     shippingAddress: {
@@ -20,7 +20,7 @@ const orderSchema = new mongoose.Schema({
     },
     totalPrice: { type: Number, required: true, default: 0.0 },
     
-    // 🌟 UPDATED: Dynamic Status Tracker instead of a simple boolean
+    // 🌟 Dynamic Status Tracker
     status: { 
         type: String, 
         required: true, 

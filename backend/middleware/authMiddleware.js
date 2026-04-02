@@ -9,10 +9,11 @@ exports.protect = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            // Fetch user and attach to request, excluding the password
             req.user = await User.findById(decoded.id).select('-password');
             next(); 
         } catch (error) {
-            console.error(error);
+            console.error("Token verification failed:", error);
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
     }
@@ -22,11 +23,20 @@ exports.protect = async (req, res, next) => {
     }
 };
 
-// 2. Seller Route: Ensures the logged-in user has the 'seller' or 'admin' role
+// 2. Seller Route: Ensures the logged-in user has 'seller' or 'admin' privileges
 exports.seller = (req, res, next) => {
     if (req.user && (req.user.role === 'seller' || req.user.role === 'admin')) {
         next(); 
     } else {
         res.status(403).json({ message: 'Access denied: Seller privileges required' });
+    }
+};
+
+// 🌟 3. NEW: Admin Route: Strictly ensures the logged-in user is the Director/Admin
+exports.admin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next(); 
+    } else {
+        res.status(403).json({ message: 'Access denied: Director/Admin privileges required' });
     }
 };

@@ -34,10 +34,8 @@ const ProductDetails = () => {
   }, [id]);
 
   const handleAddToBag = () => {
-    // Pass the item to the cart vault, initializing the quantity to 1
     addToCart({ ...product, id: product._id, qty: 1 }); 
     
-    // Smooth text transition for the luxury button
     const btn = document.getElementById('add-btn-text');
     const originalText = btn.innerText;
     btn.innerText = 'Added to Bag';
@@ -47,40 +45,42 @@ const ProductDetails = () => {
     }, 2000);
   };
 
-  // Loading State
   if (loading) {
     return (
-        <div className="min-h-screen bg-heritage-bg flex justify-center items-center">
-            <div className="w-8 h-8 border-2 border-heritage-gold border-t-transparent rounded-full animate-spin"></div>
+        <div className="min-h-screen bg-[#faf8f5] flex justify-center items-center">
+            <div className="w-8 h-8 border-2 border-[#5A1218] border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
   }
 
-  // Error State
   if (error) {
     return (
-        <div className="min-h-screen bg-heritage-bg flex flex-col justify-center items-center text-red-500 font-sans tracking-widest uppercase text-sm">
+        <div className="min-h-screen bg-[#faf8f5] flex flex-col justify-center items-center text-red-800 tracking-widest uppercase text-sm" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <p className="mb-4">{error}</p>
-            <button onClick={() => navigate(-1)} className="border-b border-red-500 pb-1 text-xs">Return to Collection</button>
+            <button onClick={() => navigate(-1)} className="border-b border-red-800 pb-1 text-xs hover:opacity-70 transition-opacity">Return to Collection</button>
         </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-heritage-bg pt-32 pb-20 px-4 sm:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#faf8f5] pt-32 pb-20 px-6 md:px-12 selection:bg-[#5A1218] selection:text-[#faf8f5]">
+      <div className="max-w-[1200px] mx-auto">
         
         <Reveal>
-            <button onClick={() => navigate(-1)} className="text-[10px] font-sans text-heritage-textLight opacity-60 tracking-widest uppercase hover:text-heritage-gold transition-colors mb-12">
-                ← Return to Boutique
+            <button 
+              onClick={() => navigate(-1)} 
+              style={{ fontFamily: "'Montserrat', sans-serif" }} 
+              className="text-[10px] text-[#999] tracking-widest uppercase hover:text-[#5A1218] transition-colors mb-12 flex items-center gap-2"
+            >
+                <span>←</span> Return to Collection
             </button>
         </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-24 items-center">
           
-          {/* Left Column: Image with Reveal Animation */}
+          {/* Left Column: Image */}
           <Reveal direction="right">
-            <div className="relative overflow-hidden bg-heritage-surface aspect-[3/4]">
+            <div className="relative overflow-hidden bg-[#eee] aspect-[3/4] shadow-sm">
               <img 
                 src={product.image} 
                 alt={product.name} 
@@ -91,42 +91,69 @@ const ProductDetails = () => {
 
           {/* Right Column: Garment Details */}
           <Reveal delay={0.2} direction="left">
-            <div className="flex flex-col justify-center h-full py-8">
-              <p className="text-xs font-sans text-heritage-gold tracking-[0.3em] uppercase mb-4">
+            <div className="flex flex-col justify-center py-8">
+              
+              <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] text-[#5A1218] tracking-[0.3em] uppercase mb-4 font-medium">
                   {product.category}
               </p>
+
+              {/* 🌟 ALLURA ACCENT: Decorative Tagline */}
+              <p style={{ 
+                fontFamily: "'Allura', cursive", 
+                fontSize: "28px", 
+                color: "#5A1218", 
+                marginBottom: "-10px",
+                opacity: 0.9
+              }}>
+                Handcrafted with intention
+              </p>
               
-              <h1 className="text-4xl lg:text-5xl font-serif text-heritage-textLight tracking-wide mb-6 leading-tight">
+              <h1 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-4xl lg:text-5xl font-normal text-[#1a1a1a] tracking-[1px] mb-6 leading-tight">
                   {product.name}
               </h1>
               
-              <p className="text-2xl font-serif text-heritage-textLight opacity-80 mb-8">
+              <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-xl text-[#666] mb-8 tracking-wider font-light">
                   INR {product.price?.toLocaleString('en-IN')}
               </p>
 
-              <div className="gold-line ml-0 mb-8"></div>
+              <div className="w-12 h-[1px] bg-[#5A1218] mb-8"></div>
 
-              <p className="text-sm font-sans text-heritage-textLight opacity-70 leading-relaxed tracking-wide mb-10 max-w-lg">
-                {product.description || "An exquisite piece from our atelier, handcrafted by master artisans using time-honoured techniques passed down through generations."}
+              <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[13px] text-[#666] leading-relaxed tracking-wide mb-12 max-w-lg font-light">
+                {product.description || "An exquisite piece from our Niali atelier, handcrafted by master artisans using time-honoured techniques. Designed with intention, this garment celebrates quiet luxury and stands apart from fleeting trends."}
               </p>
 
-              <div className="mb-10 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-heritage-surface border border-heritage-gold flex items-center justify-center text-heritage-gold font-serif text-lg">
-                  {product.user?.name ? product.user.name.charAt(0).toUpperCase() : 'M'}
+              {/* 🌟 ALLURA ACCENT: Designer Signature Section */}
+              <div className="mb-12 flex items-center gap-6 border-t border-b border-[#e8e6e2] py-8 max-w-md">
+                <div style={{ fontFamily: "'Cormorant Garamond', serif" }} className="w-14 h-14 rounded-full bg-[#f5f3f0] border border-[#e8e6e2] flex items-center justify-center text-[#5A1218] text-2xl">
+                  {product.user?.name ? product.user.name.charAt(0).toUpperCase() : 'N'}
                 </div>
                 <div>
-                  <p className="text-[10px] font-sans text-heritage-textLight opacity-50 tracking-widest uppercase">Curated By</p>
-                  <p className="text-sm font-serif text-heritage-textLight tracking-wider">{product.user?.name || 'Maison Artisan'}</p>
+                  <p style={{ fontFamily: "'Allura', cursive", fontSize: "26px", color: "#1a1a1a", marginBottom: "-5px" }}>
+                    {product.user?.name || "Nisha Bhardwaj"}
+                  </p>
+                  <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#999] tracking-[0.2em] uppercase">
+                    Creative Director & Artisan
+                  </p>
                 </div>
               </div>
 
-              {/* The new Luxury Button */}
+              {/* The Niali Luxury Button */}
               <button 
                 onClick={handleAddToBag} 
-                className="luxury-btn luxury-btn-filled w-full text-center"
+                style={{ fontFamily: "'Montserrat', sans-serif" }}
+                className="bg-[#5A1218] text-[#faf8f5] px-10 py-4 text-[11px] tracking-[0.2em] uppercase font-medium hover:bg-[#3a0a0f] transition-colors w-full md:w-auto max-w-[300px] text-center shadow-lg"
               >
                 <span id="add-btn-text">Add to Bag</span>
               </button>
+
+              <div className="mt-8 flex flex-col gap-3">
+                 <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#999] tracking-widest uppercase flex items-center gap-2">
+                   <span className="w-1 h-1 bg-[#5A1218] rounded-full"></span> Complimentary Shipping
+                 </p>
+                 <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#999] tracking-widest uppercase flex items-center gap-2">
+                   <span className="w-1 h-1 bg-[#5A1218] rounded-full"></span> Timeless Craftsmanship
+                 </p>
+              </div>
 
             </div>
           </Reveal>

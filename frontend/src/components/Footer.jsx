@@ -9,29 +9,34 @@ const Footer = () => {
         {/* TOP SECTION: Grid Layout */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 mb-16">
           
-          {/* Brand Info */}
+          {/* NIALI BRAND INFO */}
           <div>
-            <h3 className="font-serif text-2xl font-light tracking-[4px] mb-6">Maison</h3>
-            <p className="font-sans text-[11px] text-[#888] leading-relaxed max-w-[280px] tracking-wide">
-              Celebrating the art of Indian craftsmanship through timeless design and heritage techniques.
+            <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-3xl font-normal tracking-[0.2em] mb-4 uppercase">
+              NIALI
+            </h3>
+            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[0.2em] text-[#e0d5c1] mb-6 uppercase font-medium">
+              Crafted with Thread
+            </p>
+            <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] text-[#888] leading-relaxed max-w-[280px] tracking-wide font-light">
+              Niali is built on the principles of craftsmanship, intentional design and quiet luxury. Every piece represents time, details and artistic expression.
             </p>
           </div>
 
           {/* Shop Links */}
           <div>
-            <h4 className="font-sans text-[10px] tracking-[3px] uppercase text-[#b4a078] mb-6">Shop</h4>
+            <h4 style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[3px] uppercase text-[#e0d5c1] mb-6 font-medium">Shop</h4>
             <div className="flex flex-col space-y-3">
               {['New Arrivals', 'Bridal', 'Sarees', 'Jewellery', 'Menswear'].map(l => (
-                <Link key={l} to="/shop" className="font-sans text-[11px] tracking-wider text-[#888] hover:text-[#faf8f5] transition-colors duration-300">
+                <Link key={l} to="/shop" style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-wider text-[#888] hover:text-[#faf8f5] transition-colors duration-300 uppercase">
                   {l}
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* About Links (Wired to EditorialPage) */}
+          {/* About Links */}
           <div>
-            <h4 className="font-sans text-[10px] tracking-[3px] uppercase text-[#b4a078] mb-6">About</h4>
+            <h4 style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[3px] uppercase text-[#e0d5c1] mb-6 font-medium">About</h4>
             <div className="flex flex-col space-y-3">
               {[
                 { name: "Our Story", path: "/our-story" },
@@ -40,44 +45,40 @@ const Footer = () => {
                 { name: "Press", path: "/press" },
                 { name: "Careers", path: "/careers" }
               ].map(link => (
-                <Link key={link.name} to={link.path} className="font-sans text-[11px] tracking-wider text-[#888] hover:text-[#faf8f5] transition-colors duration-300">
+                <Link key={link.name} to={link.path} style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-wider text-[#888] hover:text-[#faf8f5] transition-colors duration-300 uppercase">
                   {link.name}
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Help Links (Wired to EditorialPage) */}
+          {/* NIALI CONTACT INFO (From Stationary) */}
           <div>
-            <h4 className="font-sans text-[10px] tracking-[3px] uppercase text-[#b4a078] mb-6">Help</h4>
+            <h4 style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[3px] uppercase text-[#e0d5c1] mb-6 font-medium">Contact</h4>
             <div className="flex flex-col space-y-3">
-              {[
-                { name: "Contact Us", path: "/contact" },
-                { name: "Shipping", path: "/shipping" },
-                { name: "Returns", path: "/returns" },
-                { name: "Size Guide", path: "/size-guide" },
-                { name: "Care Guide", path: "/care-guide" }
-              ].map(link => (
-                <Link key={link.name} to={link.path} className="font-sans text-[11px] tracking-wider text-[#888] hover:text-[#faf8f5] transition-colors duration-300">
-                  {link.name}
-                </Link>
-              ))}
+               <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-wider text-[#888] uppercase">
+                 +123-456-7890
+               </p>
+               <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-wider text-[#888] uppercase">
+                 hello@niali.com
+               </p>
+               <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[11px] tracking-wider text-[#888] uppercase leading-relaxed">
+                 123 Anywhere St.<br />Any City, ST 12345
+               </p>
             </div>
           </div>
 
         </div>
 
-        {/* BOTTOM SECTION: Copyright & Socials */}
+        {/* BOTTOM SECTION: Copyright & Website */}
         <div className="border-t border-[#333] pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="font-sans text-[9px] text-[#666] tracking-[2px] uppercase">
-            © {new Date().getFullYear()} MAISON HERITAGE COUTURE
+          <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#666] tracking-[2px] uppercase">
+            © {new Date().getFullYear()} NIALI. CRAFTED WITH THREAD.
           </p>
           <div className="flex gap-6">
-            {["Instagram", "Pinterest", "Facebook", "Twitter"].map(s => (
-              <a key={s} href="#" className="font-sans text-[9px] text-[#666] tracking-[2px] uppercase hover:text-[#faf8f5] transition-colors duration-300">
-                {s}
-              </a>
-            ))}
+            <a href="https://www.niali.com" style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[9px] text-[#666] tracking-[2px] uppercase hover:text-[#faf8f5] transition-colors duration-300">
+              www.Niali.com
+            </a>
           </div>
         </div>
 
