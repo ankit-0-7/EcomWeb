@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { ToastContext } from '../context/ToastContext'; 
 import { useParams, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { Reveal } from '../components/UIElements';
@@ -7,6 +8,7 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useContext(CartContext); 
+  const { addToast } = useContext(ToastContext); // 🌟 Elegant toast context is ready
 
   const [product, setProduct] = useState({});
   const [loading, setLoading] = useState(true);
@@ -36,13 +38,19 @@ const ProductDetails = () => {
   const handleAddToBag = () => {
     addToCart({ ...product, id: product._id, qty: 1 }); 
     
-    const btn = document.getElementById('add-btn-text');
-    const originalText = btn.innerText;
-    btn.innerText = 'Added to Bag';
+    // 🌟 THE FIX: Fire the elegant toast notification instead of a system alert!
+    addToast("Beautiful choice. Added to your bag.", "success");
     
-    setTimeout(() => { 
-        btn.innerText = originalText; 
-    }, 2000);
+    // Keep the button text change effect
+    const btn = document.getElementById('add-btn-text');
+    if (btn) {
+      const originalText = btn.innerText;
+      btn.innerText = 'Added to Bag';
+      
+      setTimeout(() => { 
+          btn.innerText = originalText; 
+      }, 2000);
+    }
   };
 
   if (loading) {

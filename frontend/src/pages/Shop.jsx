@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { WishlistContext } from '../context/WishlistContext';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext'; // 🌟 1. Imported ToastContext
 import { Reveal } from '../components/UIElements';
 import { Heart } from 'lucide-react';
 
@@ -41,6 +42,7 @@ const Shop = () => {
   const { addToCart } = useContext(CartContext);
   const { toggleWishlist, isInWishlist } = useContext(WishlistContext);
   const { user } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext); // 🌟 2. Grabbed the addToast function
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -190,7 +192,9 @@ const Shop = () => {
                         e.stopPropagation(); 
                         if (!user) { navigate('/login'); return; }
                         addToCart({ ...p, id: p._id, qty: 1 }); 
-                        alert("Added to bag!");
+                        
+                        // 🌟 3. REPLACED ALERT WITH TOAST NOTIFICATION
+                        addToast("Beautiful choice. Added to your bag.", "success");
                       }}
                     >
                       Add to Bag

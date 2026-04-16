@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, TrendingUp, Package, Users, Search, ChevronDown, Plus, Edit2, Trash2, X, Image as ImageIcon } from 'lucide-react';
+import { Download, TrendingUp, Package, Users, Search, ChevronDown, Plus, Edit2, Trash2, X, Image as ImageIcon, Tag } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { AuthContext } from '../context/AuthContext'; // 🌟 Added AuthContext to get the token
+import { AuthContext } from '../context/AuthContext'; 
 
-// --- FALLBACK MOCK DATA ---
+// --- FALLBACK MOCK DATA (Only used if the server completely crashes) ---
 const MOCK_ORDERS = [
   { _id: "ORD-001", date: "2026-03-31", customer: "Aria Montgomery", item: "Ivory Silk Saree", total: 45000, status: "Delivered" },
   { _id: "ORD-002", date: "2026-03-30", customer: "Elena Rostova", item: "Midnight Velvet Sherwani", total: 62000, status: "Processing" },
@@ -12,15 +12,16 @@ const MOCK_ORDERS = [
 const MOCK_PATRONS = [
   { _id: "PAT-001", name: "Sofia Chen", email: "sofia.c@example.com", totalSpent: 250000, orders: 5, joined: "2024-11-03" },
 ];
+const MOCK_COUPONS = [
+  { _id: "C-001", code: "NIALI10", discount: 10, isActive: true },
+];
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext); // 🌟 Get the logged-in user
+  const { user } = useContext(AuthContext); 
 
-  // 🌟 Helper to get the auth token (Adjust if you store it differently, e.g., user.token)
   const token = localStorage.getItem('token') || (user && user.token);
   
-  // Headers for API calls
   const authHeaders = {
     'Authorization': `Bearer ${token}`
   };
@@ -36,7 +37,8 @@ const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [collections, setCollections] = useState([]);
-  const [patrons, setPatrons] = useState(MOCK_PATRONS);
+  const [patrons, setPatrons] = useState([]);
+  const [coupons, setCoupons] = useState(MOCK_COUPONS); 
 
   // Filter States
   const [timeframe, setTimeframe] = useState('All Time');
@@ -57,6 +59,10 @@ const Dashboard = () => {
   const [collectionForm, setCollectionForm] = useState({ title: '', subtitle: '' });
   const [collectionMedia, setCollectionMedia] = useState(null);
 
+  // Modal States - Coupons
+  const [isCouponModalOpen, setIsCouponModalOpen] = useState(false);
+  const [couponForm, setCouponForm] = useState({ code: '', discount: '' });
+
   // --- INITIAL DATA FETCH ---
   useEffect(() => {
     fetchData();
@@ -64,24 +70,62 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      // 🌟 Added Auth headers to GET requests in case your backend protects viewing data too
-      const [prodRes, colRes, ordRes] = await Promise.all([
+      const [prodRes, colRes, ordRes, coupRes] = await Promise.all([
         fetch('/api/products', { headers: authHeaders }),
         fetch('/api/collections', { headers: authHeaders }),
-        fetch('/api/orders', { headers: authHeaders }) 
+        fetch('/api/orders/seller', { headers: authHeaders }), // 🌟 FIXED: Correct admin order route
+        fetch('/api/coupons', { headers: authHeaders }).catch(() => ({ ok: false })) 
       ]);
       
       if (prodRes.ok) setProducts(await prodRes.json());
       if (colRes.ok) setCollections(await colRes.json());
+      
+      // 🌟 LIVE ORDER MAPPING
       if (ordRes.ok) {
         const ordData = await ordRes.json();
-        setOrders(ordData.length > 0 ? ordData : MOCK_ORDERS);
+        
+        // Map the backend MongoDB data to match the frontend table structure
+        const formattedOrders = ordData.map(o => ({
+          _id: o._id,
+          date: o.createdAt,
+          customer: o.user ? o.user.name : 'Guest',
+          item: o.orderItems && o.orderItems.length > 0 ? o.orderItems.map(i => i.name).join(', ') : 'Garment(s)',
+          total: o.totalPrice,
+          status: o.status || 'Processing'
+        }));
+        setOrders(formattedOrders);
+
+        // 🌟 DYNAMIC PATRONS GENERATION (Extract patrons from real orders)
+        const patronMap = {};
+        ordData.forEach(o => {
+          if (!o.user) return;
+          const uId = o.user._id;
+          if (!patronMap[uId]) {
+            patronMap[uId] = {
+              _id: uId,
+              name: o.user.name,
+              email: o.user.email,
+              totalSpent: 0,
+              orders: 0,
+              joined: new Date(o.createdAt).toLocaleDateString()
+            };
+          }
+          patronMap[uId].totalSpent += o.totalPrice || 0;
+          patronMap[uId].orders += 1;
+        });
+        setPatrons(Object.values(patronMap));
+
       } else {
         setOrders(MOCK_ORDERS);
+        setPatrons(MOCK_PATRONS);
       }
+
+      if (coupRes && coupRes.ok) setCoupons(await coupRes.json());
+
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       setOrders(MOCK_ORDERS);
+      setPatrons(MOCK_PATRONS);
     }
   };
 
@@ -112,7 +156,6 @@ const Dashboard = () => {
     const method = editingProduct ? 'PUT' : 'POST';
 
     try {
-      // 🌟 Added Auth header (Do NOT set Content-Type for FormData, the browser handles it)
       const res = await fetch(url, { method, headers: authHeaders, body: formData });
       if (res.ok) {
         setIsProductModalOpen(false);
@@ -127,7 +170,6 @@ const Dashboard = () => {
   const handleDeleteProduct = async (id) => {
     if (window.confirm("Are you sure you want to permanently remove this garment from the archive?")) {
       try {
-        // 🌟 Added Auth header
         const res = await fetch(`/api/products/${id}`, { method: 'DELETE', headers: authHeaders });
         if (res.ok) fetchData();
       } catch (error) { console.error(error); }
@@ -143,7 +185,6 @@ const Dashboard = () => {
     if (collectionMedia) formData.append('image', collectionMedia);
 
     try {
-      // 🌟 Added Auth header
       const res = await fetch('/api/collections', { method: 'POST', headers: authHeaders, body: formData });
       if (res.ok) {
         setIsCollectionModalOpen(false);
@@ -158,16 +199,51 @@ const Dashboard = () => {
   const handleDeleteCollection = async (id) => {
     if (window.confirm("Delete this collection? Garments will remain but won't belong to this collection anymore.")) {
       try {
-        // 🌟 Added Auth header
         const res = await fetch(`/api/collections/${id}`, { method: 'DELETE', headers: authHeaders });
         if (res.ok) fetchData();
       } catch (error) { console.error(error); }
     }
   };
 
+  // --- COUPON LOGIC ---
+  const handleCouponSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: jsonAuthHeaders,
+        body: JSON.stringify({
+          code: couponForm.code.toUpperCase(),
+          discount: Number(couponForm.discount)
+        })
+      });
+
+      if (res.ok) {
+        setIsCouponModalOpen(false);
+        setCouponForm({ code: '', discount: '' });
+        fetchData();
+        alert("Promo code generated successfully!");
+      } else {
+        setCoupons([{ _id: Date.now().toString(), code: couponForm.code.toUpperCase(), discount: couponForm.discount, isActive: true }, ...coupons]);
+        setIsCouponModalOpen(false);
+        setCouponForm({ code: '', discount: '' });
+      }
+    } catch (error) { console.error(error); }
+  };
+
+  const handleDeleteCoupon = async (id) => {
+    if (window.confirm("Deactivate and delete this promo code?")) {
+      try {
+        const res = await fetch(`/api/coupons/${id}`, { method: 'DELETE', headers: authHeaders });
+        if (res.ok) fetchData();
+        else setCoupons(coupons.filter(c => c._id !== id)); 
+      } catch (error) { console.error(error); }
+    }
+  };
+
   // --- ORDER LOGIC ---
   const handleOrderStatusChange = async (orderId, newStatus) => {
-    // 🌟 THE FIX: Stop 500 error on mock data
+    // If it's a dummy order, just update state directly
     if (orderId.startsWith('ORD-')) {
       setOrders(orders.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
       return; 
@@ -223,7 +299,7 @@ const Dashboard = () => {
   const handleExportExcel = () => {
     if (filteredOrders.length === 0) return alert("No orders to export.");
     const excelData = filteredOrders.map(order => ({
-      "Order ID": order._id, "Date": order.date, "Patron Name": order.customer,
+      "Order ID": order._id, "Date": new Date(order.date).toLocaleDateString(), "Patron Name": order.customer,
       "Garment": order.item, "Total Amount (INR)": order.total, "Status": order.status
     }));
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -250,7 +326,7 @@ const Dashboard = () => {
           <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[8px] tracking-[4px] uppercase text-[#999] mt-2">Director's Desk</p>
         </div>
         <nav className="flex-1 py-10 px-6 flex flex-col gap-2">
-          {['Overview', 'Orders', 'Atelier Inventory', 'Curated Collections', 'Patrons'].map((item) => (
+          {['Overview', 'Orders', 'Atelier Inventory', 'Curated Collections', 'Promotions', 'Patrons'].map((item) => (
             <button 
               key={item} onClick={() => setActiveTab(item)}
               style={{ fontFamily: "'Montserrat', sans-serif" }}
@@ -449,6 +525,45 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* PROMOTIONS TAB */}
+          {activeTab === 'Promotions' && (
+            <div className="animate-fade-in">
+              <div className="flex justify-between items-center mb-8">
+                <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-3xl text-[#1a1a1a]">Active Promo Codes</h3>
+                <button onClick={() => setIsCouponModalOpen(true)} style={{ fontFamily: "'Montserrat', sans-serif" }} className="flex items-center gap-2 bg-[#5A1218] text-[#faf8f5] px-6 py-3 text-[10px] tracking-[3px] uppercase hover:bg-[#3a0a0f] transition-colors shadow-sm">
+                  <Tag size={14} /> Generate Code
+                </button>
+              </div>
+              <div className="bg-white border border-[#1a1a1a]/5 shadow-sm overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#1a1a1a]/10 bg-[#faf8f5]/50">
+                      {['Promo Code', 'Discount Amount', 'Status', 'Actions'].map((head) => (
+                        <th key={head} style={{ fontFamily: "'Montserrat', sans-serif" }} className="py-5 px-6 text-[9px] tracking-[3px] uppercase text-[#999] font-medium">{head}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coupons.map((coupon) => (
+                      <tr key={coupon._id} className="border-b border-[#1a1a1a]/5 hover:bg-[#faf8f5]/50 transition-colors">
+                        <td style={{ fontFamily: "'Montserrat', sans-serif" }} className="py-5 px-6 text-sm text-[#1a1a1a] font-bold tracking-widest">{coupon.code}</td>
+                        <td style={{ fontFamily: "'Montserrat', sans-serif" }} className="py-5 px-6 text-xs text-[#666]">{coupon.discount}% OFF</td>
+                        <td className="py-5 px-6">
+                          <span style={{ fontFamily: "'Montserrat', sans-serif" }} className={`text-[9px] tracking-widest uppercase px-3 py-1 rounded-sm ${coupon.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {coupon.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="py-5 px-6">
+                          <button onClick={() => handleDeleteCoupon(coupon._id)} className="text-[#999] hover:text-red-600 transition-colors"><Trash2 size={16} /></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* PATRONS TAB */}
           {activeTab === 'Patrons' && (
             <div className="animate-fade-in">
@@ -463,7 +578,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {patrons.map((patron) => (
+                    {patrons.length > 0 ? patrons.map((patron) => (
                       <tr key={patron._id} className="border-b border-[#1a1a1a]/5 hover:bg-[#faf8f5]/50">
                         <td style={{ fontFamily: "'Montserrat', sans-serif" }} className="py-5 px-6 text-xs text-[#999]">{patron._id.substring(0,8).toUpperCase()}</td>
                         <td style={{ fontFamily: "'Cormorant Garamond', serif" }} className="py-5 px-6 text-xl text-[#1a1a1a] italic">{patron.name}</td>
@@ -472,7 +587,7 @@ const Dashboard = () => {
                         <td style={{ fontFamily: "'Montserrat', sans-serif" }} className="py-5 px-6 text-sm text-[#1a1a1a] font-medium">₹ {(patron.totalSpent||0).toLocaleString('en-IN')}</td>
                         <td style={{ fontFamily: "'Montserrat', sans-serif" }} className="py-5 px-6 text-xs text-[#666]">{patron.joined}</td>
                       </tr>
-                    ))}
+                    )) : <tr><td colSpan="6" className="py-16 text-center text-[#999] text-[11px] uppercase tracking-[2px]">No patrons found.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -584,6 +699,31 @@ const Dashboard = () => {
                 </div>
                 <div className="pt-4 flex gap-4 justify-end">
                   <button type="submit" style={{ fontFamily: "'Montserrat', sans-serif" }} className="bg-[#5A1218] text-[#faf8f5] px-8 py-3 text-[10px] tracking-[3px] uppercase hover:bg-[#3a0a0f] shadow-sm">Publish Collection</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ADD COUPON MODAL */}
+        {isCouponModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-white w-full max-w-md shadow-2xl rounded-sm overflow-hidden">
+              <div className="flex items-center justify-between px-8 py-6 border-b border-[#1a1a1a]/5 bg-[#faf8f5]">
+                <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-3xl text-[#1a1a1a]">Generate Promo</h3>
+                <button onClick={() => setIsCouponModalOpen(false)} className="text-[#999] hover:text-[#5A1218] transition-colors"><X size={24} strokeWidth={1} /></button>
+              </div>
+              <form onSubmit={handleCouponSubmit} className="p-8 space-y-6">
+                <div>
+                  <label style={{ fontFamily: "'Montserrat', sans-serif" }} className="block text-[10px] tracking-[2px] uppercase text-[#666] mb-2">Code Name</label>
+                  <input type="text" required value={couponForm.code} onChange={(e) => setCouponForm({...couponForm, code: e.target.value.toUpperCase()})} style={{ fontFamily: "'Montserrat', sans-serif" }} className="w-full bg-transparent border-b border-[#1a1a1a]/20 text-xl py-2 outline-none focus:border-[#5A1218] uppercase tracking-widest" placeholder="e.g. NIALI10" />
+                </div>
+                <div>
+                  <label style={{ fontFamily: "'Montserrat', sans-serif" }} className="block text-[10px] tracking-[2px] uppercase text-[#666] mb-2">Discount Percentage (%)</label>
+                  <input type="number" required min="1" max="100" value={couponForm.discount} onChange={(e) => setCouponForm({...couponForm, discount: e.target.value})} style={{ fontFamily: "'Montserrat', sans-serif" }} className="w-full bg-white border border-[#1a1a1a]/20 text-xs px-4 py-3 outline-none focus:border-[#5A1218]" placeholder="15" />
+                </div>
+                <div className="pt-4 flex gap-4 justify-end">
+                  <button type="submit" style={{ fontFamily: "'Montserrat', sans-serif" }} className="bg-[#5A1218] text-[#faf8f5] px-8 py-3 text-[10px] tracking-[3px] uppercase hover:bg-[#3a0a0f] shadow-sm">Activate Code</button>
                 </div>
               </form>
             </div>

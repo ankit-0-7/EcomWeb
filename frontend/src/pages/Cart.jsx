@@ -2,14 +2,14 @@ import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
-import { ToastContext } from '../context/ToastContext'; // 🌟 Importing the elegant notification system
+import { ToastContext } from '../context/ToastContext'; 
 import { Reveal } from '../components/UIElements';
 import { Trash2, ShieldCheck, MapPin } from 'lucide-react';
 
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, clearCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
-  const { addToast } = useContext(ToastContext); // 🌟 Grabbing the addToast function
+  const { addToast } = useContext(ToastContext); 
   const navigate = useNavigate();
 
   // Load saved address from local storage under the new Niali key
@@ -19,17 +19,45 @@ const Cart = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Complimentary shipping for all orders!
+  // 🌟 NEW: Coupon States
+  const [promoCode, setPromoCode] = useState('');
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [promoMessage, setPromoMessage] = useState('');
+  const [promoError, setPromoError] = useState(false);
+
+  // 🌟 NEW: Apply Promo Logic
+  const handleApplyPromo = (e) => {
+    e.preventDefault();
+    if (!promoCode.trim()) return;
+
+    // Mock validation (matches the Dashboard mock data)
+    // Later, you can replace this with: await fetch('/api/coupons/validate', ...)
+    if (promoCode === 'NIALI10') {
+      setDiscountPercent(10);
+      setPromoError(false);
+      setPromoMessage('✨ 10% Privilege offer applied.');
+    } else if (promoCode === 'FESTIVE25') {
+      setDiscountPercent(25);
+      setPromoError(false);
+      setPromoMessage('✨ 25% Privilege offer applied.');
+    } else {
+      setDiscountPercent(0);
+      setPromoError(true);
+      setPromoMessage('This code is invalid or expired.');
+    }
+  };
+
+  // --- DYNAMIC MATH CALCULATIONS ---
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * (item.quantity || item.qty)), 0);
-  const shippingCost = 0; 
-  const total = subtotal + shippingCost;
+  const shippingCost = 0; // Complimentary shipping
+  const discountAmount = (subtotal * discountPercent) / 100;
+  const finalTotal = subtotal - discountAmount + shippingCost;
 
   // Real Backend Checkout Flow
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     
     if (!user) {
-      // 🌟 REPLACED: Using the elegant toast instead of a browser alert
       addToast("Please sign in to complete your purchase.", "error");
       navigate('/login');
       return;
@@ -40,7 +68,6 @@ const Cart = () => {
     // Save the address to the browser for next time!
     localStorage.setItem('niali_shipping', JSON.stringify(shipping));
 
-    // We only send the essential product details now.
     const orderItems = cartItems.map(item => ({
         name: item.name,
         qty: item.quantity || item.qty,
@@ -59,7 +86,7 @@ const Cart = () => {
         body: JSON.stringify({ 
           orderItems, 
           shippingAddress: shipping, 
-          totalPrice: total 
+          totalPrice: finalTotal // 🌟 FIXED: Sending the discounted final total
         })
       });
 
@@ -69,9 +96,8 @@ const Cart = () => {
       }
       
       clearCart();
-      navigate('/success'); // Send to the "Thank You" page
+      navigate('/success'); 
     } catch (error) {
-      // 🌟 REPLACED: Using the elegant toast instead of a browser alert
       addToast(error.message, "error");
     } finally {
       setLoading(false);
@@ -162,14 +188,68 @@ const Cart = () => {
                 <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-3xl tracking-[1px] text-[#1a1a1a] mb-6">
                   Order Summary
                 </h3>
+
+                {/* 🌟 PRIVILEGE CODE INPUT */}
+                <div className="mb-8 border-b border-[#e8e6e2] pb-6">
+                  <label style={{ fontFamily: "'Montserrat', sans-serif" }} className="block text-[9px] tracking-[3px] uppercase text-[#1a1a1a] mb-3">
+                    Privilege Code
+                  </label>
+                  <form onSubmit={handleApplyPromo} className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      style={{ fontFamily: "'Montserrat', sans-serif" }}
+                      className="flex-1 bg-transparent border-b border-[#ccc] pb-2 text-[11px] tracking-widest uppercase outline-none focus:border-[#5A1218] text-[#1a1a1a] placeholder:text-[#999] transition-colors"
+                      placeholder="ENTER CODE"
+                    />
+                    <button 
+                      type="submit"
+                      style={{ fontFamily: "'Montserrat', sans-serif" }}
+                      className="text-[10px] tracking-[2px] uppercase text-[#5A1218] hover:text-[#1a1a1a] transition-colors font-medium border-b border-transparent hover:border-[#1a1a1a] pb-2"
+                    >
+                      Apply
+                    </button>
+                  </form>
+                  
+                  {/* Elegant fade-in feedback message */}
+                  {promoMessage && (
+                    <p 
+                      style={{ fontFamily: "'Montserrat', sans-serif" }} 
+                      className={`mt-3 text-[10px] tracking-[1px] animate-fade-in ${promoError ? 'text-red-500' : 'text-[#4A5D23] italic font-medium'}`}
+                    >
+                      {promoMessage}
+                    </p>
+                  )}
+                </div>
                 
+                {/* MATH BREAKDOWN */}
                 <div style={{ fontFamily: "'Montserrat', sans-serif" }} className="space-y-4 mb-8 text-xs tracking-widest text-[#666] uppercase">
-                  <div className="flex justify-between"><p>Subtotal</p><p className="text-[#1a1a1a]">INR {subtotal.toLocaleString('en-IN')}</p></div>
-                  <div className="flex justify-between"><p>Shipping</p><p className="text-[#1a1a1a]">Complimentary</p></div>
-                  <div className="flex justify-between pt-4 border-t border-[#e8e6e2] font-semibold text-[#1a1a1a]"><p>Total</p><p>INR {total.toLocaleString('en-IN')}</p></div>
+                  <div className="flex justify-between">
+                    <p>Subtotal</p>
+                    <p className="text-[#1a1a1a]">INR {subtotal.toLocaleString('en-IN')}</p>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <p>Shipping</p>
+                    <p className="text-[#1a1a1a]">Complimentary</p>
+                  </div>
+
+                  {/* 🌟 DYNAMIC DISCOUNT LINE */}
+                  {discountPercent > 0 && (
+                    <div className="flex justify-between text-[#5A1218] animate-fade-in">
+                      <p>Discount ({discountPercent}%)</p>
+                      <p>- INR {discountAmount.toLocaleString('en-IN')}</p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between pt-4 border-t border-[#e8e6e2] font-semibold text-[#1a1a1a]">
+                    <p>Total</p>
+                    <p>INR {finalTotal.toLocaleString('en-IN')}</p>
+                  </div>
                 </div>
 
-                {/* Shipping Form */}
+                {/* SHIPPING FORM */}
                 <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-2xl tracking-[1px] text-[#1a1a1a] mb-4 flex items-center gap-2">
                   <MapPin size={18} className="text-[#5A1218]"/> Shipping Destination
                 </h3>

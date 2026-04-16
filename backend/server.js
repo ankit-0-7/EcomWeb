@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
+// 🌟 FIX: Load environment variables FIRST before importing anything else!
+dotenv.config();
+
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 
@@ -10,8 +13,8 @@ const Collection = require('./models/Collection');
 const Order = require('./models/Order');
 const { protect, seller } = require('./middleware/authMiddleware');
 
-// Load environment variables
-dotenv.config();
+// 🌟 NOW import your Automated Cron Jobs (it can safely read the passwords now)
+const initCronJobs = require('./jobs/cronJobs');
 
 const app = express();
 
@@ -103,10 +106,10 @@ app.get('/api/orders/myorders', protect, async (req, res) => {
     }
 });
 
-// 3. GET: Fetch orders for the Artisan (Seller Dashboard)
+// 3. GET: Fetch ALL orders for the Director's Dashboard
 app.get('/api/orders/seller', protect, seller, async (req, res) => {
     try {
-        const orders = await Order.find({ 'orderItems.seller': req.user._id })
+        const orders = await Order.find({})
                                   .populate('user', 'name email') 
                                   .sort({ createdAt: -1 }); 
         res.json(orders);
@@ -120,7 +123,7 @@ app.put('/api/orders/:id/status', protect, seller, async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (order) {
-            order.status = req.body.status; // 🌟 Takes the specific status from the dropdown
+            order.status = req.body.status; // Takes the specific status from the dropdown
             const updatedOrder = await order.save();
             res.json(updatedOrder);
         } else {
@@ -139,6 +142,9 @@ app.put('/api/orders/:id/status', protect, seller, async (req, res) => {
 app.get('/', (req, res) => {
     res.send('Premium E-commerce API is running...');
 });
+
+// 🌟 Initialize the daily Excel report timer!
+initCronJobs();
 
 const PORT = process.env.PORT || 5000;
 

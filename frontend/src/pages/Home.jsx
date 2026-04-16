@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Reveal } from '../components/UIElements';
-import { X } from 'lucide-react'; // 🌟 Added for the close button
+import { X, ArrowRight } from 'lucide-react'; 
 
 import atelierBg from '../assets/atelier-bg.jpg';
 
@@ -12,189 +12,80 @@ const DEFAULT_COLLECTIONS = [
 ];
 
 const DEFAULT_FEATURED = [
-  { _id: 'f1', name: "Midnight Velvet Sherwani", description: "Understated yet unmistakable, our signature velvet layered over a tailored waistcoat.", image: "https://images.unsplash.com/photo-1597983073493-88ec35e4af46?w=1000&q=80", category: "Menswear" },
-  { _id: 'f2', name: "Ivory Silk Saree", description: "Intricate hand-embroidery on pure silk, redefining timeless grace.", image: "https://images.unsplash.com/photo-1615886284693-018ce5f2a176?w=1000&q=80", category: "Sarees" },
-  { _id: 'f3', name: "Crimson Bridal Lehenga", description: "A masterpiece of craftsmanship, designed for your most unforgettable day.", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1000&q=80", category: "Bridal" },
+  { _id: 'f1', name: "Midnight Velvet Sherwani", description: "Understated yet unmistakable, our signature velvet.", image: "https://images.unsplash.com/photo-1597983073493-88ec35e4af46?w=1000&q=80", category: "Menswear" },
+  { _id: 'f2', name: "Ivory Silk Saree", description: "Intricate hand-embroidery on pure silk.", image: "https://images.unsplash.com/photo-1615886284693-018ce5f2a176?w=1000&q=80", category: "Sarees" },
+  { _id: 'f3', name: "Crimson Bridal Lehenga", description: "A masterpiece of craftsmanship designed for the modern muse.", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1000&q=80", category: "Bridal" },
 ];
 
-/* ─── AUTO-ROTATING CAROUSEL ─── */
-const FeaturedCarousel = ({ products, navigate }) => {
-  const trackRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragState = useRef({ startX: 0, scrollLeft: 0, hasMoved: false });
-  const autoplayRef = useRef(null);
-
-  const getCardWidth = useCallback(() => {
-    const track = trackRef.current;
-    if (!track || !track.children.length) return 0;
-    return track.children[0].offsetWidth + 24; // gap-6 = 24px
-  }, []);
-
-  // Auto-rotate every 4 seconds
-  const startAutoplay = useCallback(() => {
-    clearInterval(autoplayRef.current);
-    autoplayRef.current = setInterval(() => {
-      setActiveIndex((prev) => {
-        const next = (prev + 1) % products.length;
-        const track = trackRef.current;
-        if (track) {
-          track.scrollTo({ left: getCardWidth() * next, behavior: 'smooth' });
-        }
-        return next;
-      });
-    }, 4000);
-  }, [products.length, getCardWidth]);
-
-  const stopAutoplay = () => clearInterval(autoplayRef.current);
+/* ─── SINGLE CINEMATIC FRAME (Replaces Horizontal Carousel) ─── */
+const CinematicFrame = ({ products, navigate }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    startAutoplay();
-    return () => stopAutoplay();
-  }, [startAutoplay]);
+    if (!products || products.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % products.length);
+    }, 5000); // Cross-fade every 5 seconds
+    return () => clearInterval(interval);
+  }, [products]);
 
-  // Update active dot on manual scroll
-  const handleScroll = useCallback(() => {
-    const cw = getCardWidth();
-    if (!cw) return;
-    const index = Math.round(trackRef.current.scrollLeft / cw);
-    setActiveIndex(Math.min(index, products.length - 1));
-  }, [products.length, getCardWidth]);
+  if (!products || products.length === 0) return null;
 
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    track.addEventListener('scroll', handleScroll, { passive: true });
-    return () => track.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
-
-  // Drag to scroll
-  const onMouseDown = (e) => {
-    stopAutoplay();
-    setIsDragging(true);
-    dragState.current = { startX: e.pageX, scrollLeft: trackRef.current.scrollLeft, hasMoved: false };
-    trackRef.current.style.cursor = 'grabbing';
-    trackRef.current.style.scrollSnapType = 'none';
-  };
-
-  const onMouseMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const dx = e.pageX - dragState.current.startX;
-    if (Math.abs(dx) > 5) dragState.current.hasMoved = true;
-    trackRef.current.scrollLeft = dragState.current.scrollLeft - dx;
-  };
-
-  const onMouseUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    trackRef.current.style.cursor = 'grab';
-    trackRef.current.style.scrollSnapType = 'x mandatory';
-    startAutoplay();
-  };
-
-  const scrollTo = (index) => {
-    stopAutoplay();
-    const track = trackRef.current;
-    if (!track) return;
-    track.scrollTo({ left: getCardWidth() * index, behavior: 'smooth' });
-    setActiveIndex(index);
-    startAutoplay();
-  };
+  const activeProduct = products[currentIndex];
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={stopAutoplay}
-      onMouseLeave={startAutoplay}
-    >
-      <div
-        ref={trackRef}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-        className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-2 select-none"
-        style={{
-          cursor: 'grab',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          WebkitOverflowScrolling: 'touch',
-          paddingLeft: 'max(1.25rem, calc((100vw - 1320px) / 2 + 1.25rem))',
-          paddingRight: 'max(1.25rem, calc((100vw - 1320px) / 2 + 1.25rem))',
-        }}
+    <div className="relative w-full max-w-[1320px] mx-auto px-6">
+      <div 
+        className="relative overflow-hidden cursor-pointer group rounded-sm shadow-2xl" 
+        style={{ height: 'clamp(450px, 70vh, 750px)' }}
+        onClick={() => navigate(`/product/${activeProduct._id}`)}
       >
-        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
-
-        {products.map((product) => (
+        {products.map((product, index) => (
           <div
             key={product._id}
-            onClick={() => {
-              if (!dragState.current.hasMoved) {
-                navigate(`/shop?category=${encodeURIComponent(product.category)}`);
-              }
-            }}
-            className="snap-start shrink-0 w-[80vw] sm:w-[65vw] md:w-[42vw] lg:w-[35vw] xl:w-[400px] relative overflow-hidden cursor-pointer group"
+            className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${
+              index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+            }`}
           >
-            <div className="relative overflow-hidden" style={{ aspectRatio: '3 / 4' }}>
-              <img
-                src={product.image}
-                alt={product.name}
-                loading="lazy"
-                draggable={false}
-                className="w-full h-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute bottom-6 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 translate-y-3 group-hover:translate-y-0 transition-all duration-500">
-                <span
-                  style={{ fontFamily: "'Montserrat', sans-serif" }}
-                  className="text-[9px] tracking-[4px] uppercase text-[#faf8f5] bg-[#5A1218]/80 backdrop-blur-sm px-6 py-2.5"
-                >
-                  View Piece
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-4 pb-1">
-              <p
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
-                className="text-[9px] tracking-[4px] uppercase text-[#5A1218] mb-1.5"
-              >
-                {product.category}
-              </p>
-              <h3
-                style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                className="text-xl md:text-2xl font-light tracking-[1px] text-[#1a1a1a] mb-1.5 leading-snug"
-              >
-                {product.name}
-              </h3>
-              <p
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
-                className="text-[11px] text-[#888] leading-[1.7] font-light line-clamp-2"
-              >
-                {product.description}
-              </p>
-            </div>
+            {/* Ken Burns Effect (Slow Zoom) */}
+            <img
+              src={product.image}
+              alt={product.name}
+              className={`w-full h-full object-cover transition-transform duration-[6000ms] ease-out ${
+                index === currentIndex ? 'scale-110' : 'scale-100'
+              }`}
+            />
+            {/* Subtle Gradient for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/80 via-transparent to-transparent opacity-80" />
           </div>
         ))}
-      </div>
 
-      {products.length > 1 && (
-        <div className="flex justify-center gap-2.5 mt-6">
+        {/* Content Overlay */}
+        <div className="absolute bottom-10 left-8 md:bottom-16 md:left-16 z-20 max-w-xl animate-fade-in pointer-events-none">
+          <p style={{ fontFamily: "'Montserrat', sans-serif" }} className="text-[10px] tracking-[5px] uppercase text-[#e0d5c1] mb-3">
+            {activeProduct.category}
+          </p>
+          <h3 style={{ fontFamily: "'Cormorant Garamond', serif" }} className="text-3xl md:text-5xl lg:text-6xl text-[#faf8f5] font-light leading-tight mb-6">
+            {activeProduct.name}
+          </h3>
+          <div 
+            style={{ fontFamily: "'Montserrat', sans-serif" }}
+            className="flex items-center gap-4 text-[#faf8f5] text-[10px] tracking-[3px] uppercase group/btn border-b border-[#faf8f5]/30 pb-2 w-fit transition-all pointer-events-auto hover:border-[#faf8f5]"
+          >
+            Discover the Craft <ArrowRight size={14} className="group-hover/btn:translate-x-2 transition-transform" />
+          </div>
+        </div>
+
+        {/* Subtle Progress Indicators */}
+        <div className="absolute bottom-8 right-8 md:bottom-16 md:right-16 z-20 flex gap-3">
           {products.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => scrollTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
-              className={`rounded-full transition-all duration-500 cursor-pointer border-none ${
-                i === activeIndex
-                  ? 'w-7 h-[3px] bg-[#5A1218]'
-                  : 'w-[3px] h-[3px] bg-[#1a1a1a]/20 hover:bg-[#1a1a1a]/40'
-              }`}
+            <div 
+              key={i} 
+              className={`h-[2px] transition-all duration-700 ${i === currentIndex ? 'w-8 bg-[#e0d5c1]' : 'w-3 bg-white/30'}`}
             />
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -207,12 +98,8 @@ const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [email, setEmail] = useState('');
   const [subscribeStatus, setSubscribeStatus] = useState('idle');
-  
-  // 🌟 NEW: State for the Welcome Offer
   const [showOffer, setShowOffer] = useState(false);
 
-  // 🌟 NEW: Check if they've already seen the offer this session.
-  // If not, wait 3.5 seconds and show it smoothly.
   useEffect(() => {
     const hasSeenOffer = sessionStorage.getItem('niali_welcome_offer');
     if (!hasSeenOffer) {
@@ -245,7 +132,6 @@ const Home = () => {
     fetchData();
   }, []);
 
-  // 🌟 NEW: Function to close the offer and remember they closed it
   const handleCloseOffer = () => {
     setShowOffer(false);
     sessionStorage.setItem('niali_welcome_offer', 'true');
@@ -273,19 +159,17 @@ const Home = () => {
   return (
     <div className="bg-[#faf8f5] selection:bg-[#5A1218] selection:text-[#faf8f5]">
 
-      {/* 🌟 NEW: CLASSY WELCOME OFFER MODAL */}
+      {/* 🌟 CLASSY WELCOME OFFER MODAL */}
       <div
         className={`fixed inset-0 z-[5000] flex items-center justify-center transition-all duration-1000 ease-in-out ${
           showOffer ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
         }`}
       >
-        {/* Subtle dark backdrop with blur */}
         <div 
           className="absolute inset-0 bg-black/20 backdrop-blur-sm cursor-pointer transition-opacity duration-1000" 
           onClick={handleCloseOffer} 
         />
 
-        {/* Elegant Modal Box */}
         <div 
           className="relative bg-[#faf8f5] w-[90%] max-w-[480px] p-10 md:p-14 text-center shadow-2xl transform transition-transform duration-1000 ease-out border border-[#e0d5c1]/50"
           style={{ transform: showOffer ? 'translateY(0)' : 'translateY(20px)' }}
@@ -392,8 +276,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ─── COLLECTIONS (reduced gap) ─── */}
-      <section className="px-5 md:px-10 lg:px-10 pt-16 md:pt-20 pb-10 md:pb-14 max-w-[1400px] mx-auto">
+      {/* ─── COLLECTIONS (Tightened Gaps) ─── */}
+      <section className="px-5 md:px-10 lg:px-10 pt-16 md:pt-20 pb-4 md:pb-6 max-w-[1400px] mx-auto">
         <Reveal>
           <p
             style={{ fontFamily: "'Montserrat', sans-serif" }}
@@ -459,27 +343,27 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ─── FEATURED CAROUSEL (auto-rotating) ─── */}
-      <section className="pt-10 md:pt-14 pb-14 md:pb-20 bg-[#faf8f5]">
+      {/* ─── FEATURED PIECES (Tightened Gaps & Single Frame) ─── */}
+      <section className="pt-8 md:pt-10 pb-16 md:pb-24 bg-[#faf8f5]">
         <Reveal>
-          <p
-            style={{ fontFamily: "'Montserrat', sans-serif" }}
-            className="text-center text-[10px] tracking-[5px] uppercase text-[#5A1218] mb-3"
-          >
-            From the Atelier
-          </p>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <h2
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            className="text-center text-3xl md:text-4xl lg:text-5xl font-light tracking-[3px] mb-10 md:mb-12 text-[#1a1a1a]"
-          >
-            Featured Pieces
-          </h2>
+          <div className="text-center mb-10 md:mb-12">
+            <p
+              style={{ fontFamily: "'Montserrat', sans-serif" }}
+              className="text-[10px] tracking-[5px] uppercase text-[#5A1218] mb-3"
+            >
+              From the Atelier
+            </p>
+            <h2
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              className="text-3xl md:text-4xl lg:text-5xl font-light tracking-[3px] text-[#1a1a1a]"
+            >
+              Featured Pieces
+            </h2>
+          </div>
         </Reveal>
 
         <Reveal delay={0.25}>
-          <FeaturedCarousel products={featuredProducts} navigate={navigate} />
+          <CinematicFrame products={featuredProducts} navigate={navigate} />
         </Reveal>
       </section>
 
